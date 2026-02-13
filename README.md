@@ -28,7 +28,7 @@ Valid daily progress includes:
 - Architecture and infrastructure work
 - Printing / device integrations
 - Performance improvements
-- Documentation and runbook updates
+- Documentation and runbooks
 - Sprint and progress records
 
 Progress must be commit-backed and logged.
@@ -75,4 +75,66 @@ Stack choice is project-specific, not challenge-wide.
 All meaningful commits must be documented.
 
 Structure:
+
+_progress/<year-month>/<commit-revision>.md
+
+Monthly summary:
+
+_progress/<year-month>/README.md
+
+Rules:
+
+- One file per commit
+- Structured format required
+- Documentation only inside `_progress`
+- Append-only history
+
+See `_progress/README.md` for format specification.
+
+---
+
+## Sprint Management Standard
+
+All sprint work is tracked under:
+
+_management/sprints/<YYYY-MM-DD_HH-mm>/<sprint-name>/
+
+Each sprint contains:
+
+- README.md
+- tasks.md
+- acceptance.md
+
+Sprint files are created at sprint start and updated through commits.
+
+---
+
+## Definition of Challenge Success
+
+The 100 Days Challenge is successful when:
+
+- Continuous daily progress is maintained
+- Each project has reproducible setup documentation
+- Progress is fully traceable through `_progress`
+- Sprint history is recorded
+- Deliverables reach functional stability
+- Documentation quality supports handover
+
+---
+
+## Roles
+
+Owner — scope authority and final acceptance  
+Michael — project management and documentation governance  
+Alexander — UI/UX authority and design standards
+
+---
+
+## Legal Notice
+
+All code, documentation, structures, and specifications in this challenge are owned by:
+
+Prodromos Sarakinou
+
+Unauthorized redistribution or reuse outside explicit permission is not allowed.
 
