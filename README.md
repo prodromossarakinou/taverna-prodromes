@@ -1,77 +1,72 @@
-# 100 Days Challenge — Local Order System (Next.js Only)
+# 100 Days Challenge — AI-Assisted Software Delivery
 
-**Disclaimer:** This is a non-commercial, educational project created for learning purposes and internal use. The architecture and code patterns are inspired by community best practices and open-source contributions (including those by Tim Neutkens). It is not intended for profit or commercial distribution.
+Copyright © 2026 Prodromos Sarakinou. All rights reserved.
 
-Owner: Michael — Project Management  
+Owner: Prodromos Sarakinou  
+Project Management: Michael  
 UI/UX Lead: Alexander
 
-This project runs under a **100 Days Challenge** delivery model.  
-The system is implemented entirely with Next.js (web-only stack), covering server, admin/pass view, and order-taking interface.
+This repository (or repository group) is developed under a **100 Days Challenge** model.  
+The challenge focuses on continuous, daily, measurable delivery using AI-assisted development, strict documentation discipline, and structured progress tracking.
 
-No Flutter or separate mobile codebase is used. Mobile devices access the system through the browser over the local network.
+Multiple projects may be executed under this challenge. The order system is one of them, not the only one.
 
 ---
 
 ## Challenge Model
 
 Duration: 100 consecutive days  
-Rule: Every day must produce measurable, logged progress.
+Rule: Every day must produce measurable, documented progress.
 
 Valid daily progress includes:
 
-- Feature implementation
+- Feature delivery
 - Bug fixes
-- Behavioral refactors
+- Refactors with behavioral impact
 - UI/UX improvements
-- Build and dependency fixes
-- Printing integration work
-- Performance and reliability improvements
+- Build and dependency stabilization
+- Architecture and infrastructure work
+- Printing / device integrations
+- Performance improvements
 - Documentation and runbook updates
-- Structured progress logs
+- Sprint and progress records
 
-Progress must be commit-backed and documented.
-
----
-
-## System Objective
-
-Build a local-network order management system using **Next.js only**, providing:
-
-- Order taking UI (mobile browser friendly)
-- Pass / kitchen management UI
-- Local API endpoints
-- Real-time order visibility
-- Server-side ticket printing
-- LAN-only operation
-- No authentication in initial scope
+Progress must be commit-backed and logged.
 
 ---
 
-## Architecture
+## Project Scope Model
 
-Single repository:
+The challenge can include multiple parallel or sequential projects, for example:
 
-- Next.js application
-  - App Router / API routes
-  - Order-taking UI (PDA/mobile browser)
-  - Pass / kitchen dashboard
-  - Local persistence layer
-  - Printing integration
-  - Real-time update mechanism (SSE or equivalent)
+- Local order systems
+- Admin dashboards
+- Operational tools
+- Device-integrated apps
+- Internal platforms
+- UI/UX systems
+- API services
 
-Mobile devices act as thin clients via browser on the same LAN.
+Each project must define its own:
+
+- README
+- Scope
+- Acceptance criteria
+- Sprint structure
 
 ---
 
-## Operating Constraints
+## Technology Approach
 
-- Server runs on a local PC
-- Access limited to local network
-- No authentication (current scope)
-- No cloud dependency required
-- System must operate offline inside LAN
-- Printer connected locally or via LAN
-- Mobile access via browser only
+Projects may use different stacks. Typical patterns:
+
+- Next.js / Web platforms
+- Local-first architectures
+- AI-assisted code generation
+- Design-system-driven UI
+- LAN or offline-capable systems
+
+Stack choice is project-specific, not challenge-wide.
 
 ---
 
