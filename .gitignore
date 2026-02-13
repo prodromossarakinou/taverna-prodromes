@@ -36,6 +36,9 @@ yarn-error.log*
 # junie
 .junie/
 
+# recovered blobs
+recovered_blobs/
+
 # vercel
 .vercel
 
