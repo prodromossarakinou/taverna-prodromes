@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 100 Days Challenge — Local Order System (Next.js Only)
 
-## Getting Started
+Owner: Michael — Project Management  
+UI/UX Lead: Alexander
 
-First, run the development server:
+This project runs under a **100 Days Challenge** delivery model.  
+The system is implemented entirely with Next.js (web-only stack), covering server, admin/pass view, and order-taking interface.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+No Flutter or separate mobile codebase is used. Mobile devices access the system through the browser over the local network.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Challenge Model
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Duration: 100 consecutive days  
+Rule: Every day must produce measurable, logged progress.
 
-## Learn More
+Valid daily progress includes:
 
-To learn more about Next.js, take a look at the following resources:
+- Feature implementation
+- Bug fixes
+- Behavioral refactors
+- UI/UX improvements
+- Build and dependency fixes
+- Printing integration work
+- Performance and reliability improvements
+- Documentation and runbook updates
+- Structured progress logs
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Progress must be commit-backed and documented.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## System Objective
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Build a local-network order management system using **Next.js only**, providing:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Order taking UI (mobile browser friendly)
+- Pass / kitchen management UI
+- Local API endpoints
+- Real-time order visibility
+- Server-side ticket printing
+- LAN-only operation
+- No authentication in initial scope
+
+---
+
+## Architecture
+
+Single repository:
+
+- Next.js application
+  - App Router / API routes
+  - Order-taking UI (PDA/mobile browser)
+  - Pass / kitchen dashboard
+  - Local persistence layer
+  - Printing integration
+  - Real-time update mechanism (SSE or equivalent)
+
+Mobile devices act as thin clients via browser on the same LAN.
+
+---
+
+## Operating Constraints
+
+- Server runs on a local PC
+- Access limited to local network
+- No authentication (current scope)
+- No cloud dependency required
+- System must operate offline inside LAN
+- Printer connected locally or via LAN
+- Mobile access via browser only
+
+---
+
+## Progress Tracking Standard
+
+All meaningful commits must be documented.
+
+Structure:
+
