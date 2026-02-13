@@ -1,5 +1,7 @@
 # 100 Days Challenge — Local Order System (Next.js Only)
 
+**Disclaimer:** This is a non-commercial, educational project created for learning purposes and internal use. The architecture and code patterns are inspired by community best practices and open-source contributions (including those by Tim Neutkens). It is not intended for profit or commercial distribution.
+
 Owner: Michael — Project Management  
 UI/UX Lead: Alexander
 
