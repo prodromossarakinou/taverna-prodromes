@@ -24,3 +24,33 @@
     - Μείωση του ύψους των κουμπιών από `h-24` σε `h-20`.
     - Κεντράρισμα του κειμένου (`text-center`, `justify-center`) και βελτίωση του line height (`leading-tight`) για μείωση του οπτικού "κενού".
 - **2026-02-14 00:10**: Updated main project README with the 7-Day MVP Challenge specification.
+- **2026-02-14 11:55**: Refactored `KitchenDisplay.tsx` into reusable components.
+    - Created `KitchenHeader.tsx`, `OrderCard.tsx`, and `OrderItemRow.tsx`.
+    - Improved code maintainability and separation of concerns.
+    - Simplified `KitchenDisplay.tsx` by delegating rendering logic to sub-components.
+- **2026-02-14 12:05**: Refactored `WaiterView.tsx` into reusable components.
+    - Created `WaiterHeader.tsx`, `CategorySelector.tsx`, `MenuGrid.tsx`, and `OrderSummary.tsx`.
+    - Modularized waiter interface for easier UI/UX adjustments.
+    - Cleaned up `WaiterView.tsx` by moving rendering logic to specialized components.
+- **2026-02-14 12:15**: Further refactored `MenuGrid.tsx`.
+    - Extracted `MenuItem.tsx` as a separate component for better granularity.
+- **2026-02-14 12:30**: Βελτίωση `MenuItem.tsx` με οπτική ανατροφοδότηση.
+    - Προσθήκη animation (`animate-heart-beat`) κατά το κλικ για άμεση επιβεβαίωση της προσθήκης στην παραγγελία.
+    - Χρήση του `--primary` χρώματος για το hover state για συνέπεια με το brand.
+    - Καθορισμός σταθερού ύψους `h-20` για ομοιομορφία στο grid.
+- **2026-02-14 12:55**: Πλήρης αναθεώρηση του χρωματικού συστήματος σύμφωνα με τις οδηγίες του Alexander.
+    - Ενημέρωση `globals.css` με τη νέα παλέτα γκρίζων (gray-50 έως gray-900) και μπλε (500/400).
+    - Εφαρμογή συστήματος ανύψωσης (elevation) σε Dark Mode (Background: 900, Cards: 700, Summary: 850).
+    - Υλοποίηση των gradient headers (blue-600/700 σε light, blue-700/800 σε dark).
+    - Εναρμόνιση των χρωμάτων κατάστασης (Pending/Ready/Delivered) και κατηγοριών.
+    - Διασφάλιση αντίθεσης WCAG AA σε όλα τα κείμενα και τα διαδραστικά στοιχεία.
+    - Προσθήκη blue glow effect στο hover των καρτών σε dark mode.
+- **2026-02-14 13:10**: Προσαρμογή του `MenuGrid.tsx` για mobile συσκευές.
+    - Αλλαγή της διάταξης σε 1 στήλη (`grid-cols-1`) για μικρές οθόνες και 2 στήλες (`sm:grid-cols-2`) για μεγαλύτερες, βελτιώνοντας την ευχρηστία σε κινητά.
+- **2026-02-14 13:25**: Μικροδιορθώσεις στο UI του WaiterView.
+    - Μείωση ύψους των `MenuItem` σε `h-15` για ακόμα μεγαλύτερη πυκνότητα.
+    - Αφαίρεση του κάτω περιγράμματος (border-b) από τα επιλεγμένα tabs κατηγοριών στο `CategorySelector.tsx`.
+- **2026-02-14 13:40**: Ανασχεδιασμός των φίλτρων στο Kitchen Header σύμφωνα με τις προδιαγραφές του Alexander.
+    - Διαχωρισμός του τίτλου από τα φίλτρα σε δύο διακριτά τμήματα.
+    - Εφαρμογή χρωμάτων `bg-slate-800` (selected) και `bg-white` (unselected) με γκρι περίγραμμα για μέγιστη αντίθεση και καθαρότητα.
+    - Διασφάλιση συμβατότητας WCAG AAA για την επιλεγμένη κατάσταση.
