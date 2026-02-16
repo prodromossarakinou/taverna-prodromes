@@ -124,8 +124,9 @@ The 100 Days Challenge is successful when:
 
 ## Roles
 
-Owner — scope authority and final acceptance  
-Michael — project management and documentation governance  
+Owner — Prodromos Sarakinou — scope authority, copyright holder, and final acceptance  
+Michael — project management, sprint control, and documentation governance  
+Sarah — software engineer, implementation, progress logging, and repository structure maintenance  
 Alexander — UI/UX authority and design standards
 
 ---
