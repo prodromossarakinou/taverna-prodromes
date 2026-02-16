@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { menuRepository } from '@/lib/repositories/mock';
+import { menuRepository } from '@/lib/repositories';
 
 export async function GET() {
   try {

@@ -64,3 +64,9 @@
     - Δημιουργία `docker-compose.yml` με υπηρεσίες `db` (Postgres 16) και `pgadmin`.
     - Ρύθμιση persistent volumes και healthchecks.
     - Ενημέρωση του `README.md` με τα στοιχεία σύνδεσης (host, port, credentials).
+- **2026-02-16 13:15**: Σύνδεση του API με την PostgreSQL μέσω Prisma.
+    - Εγκατάσταση Prisma ORM και ρύθμιση του schema (MenuItem, Order, OrderItem).
+    - Υλοποίηση `PrismaMenuRepository` και `PrismaOrderRepository`.
+    - Δημιουργία seed script για τον αρχικό κατάλογο του μενού.
+    - Ενημέρωση των API routes για τη χρήση της πραγματικής βάσης δεδομένων αντί για mock data.
+    - Επαλήθευση της σύνδεσης και των λειτουργιών CRUD μέσω test script.

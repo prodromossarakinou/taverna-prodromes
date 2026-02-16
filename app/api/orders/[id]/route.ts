@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { orderRepository } from '@/lib/repositories/mock';
+import { orderRepository } from '@/lib/repositories';
 
 export async function PATCH(
   request: Request,
