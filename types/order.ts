@@ -1,6 +1,14 @@
 export type OrderCategory = 'Κρύα' | 'Ζεστές' | 'Ψησταριά' | 'Μαγειρευτό' | 'Ποτά';
 
 export type ItemStatus = 'pending' | 'ready' | 'delivered';
+export type OrderStatus = 'pending' | 'completed' | 'cancelled';
+
+export interface MenuItem {
+  id: string;
+  name: string;
+  category: OrderCategory;
+  price?: number; // Optional for MVP
+}
 
 export interface OrderItem {
   id: string;
@@ -16,5 +24,5 @@ export interface Order {
   waiterName: string;
   items: OrderItem[];
   timestamp: number;
-  status: 'pending' | 'completed';
+  status: OrderStatus;
 }

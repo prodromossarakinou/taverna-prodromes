@@ -3,17 +3,17 @@
 ## Planned
 
 API / Contract
-- Define minimal entities: MenuItem, Order, OrderItem, Status
-- Freeze routes and payloads for:
-  - GET menu
-  - POST order
-  - GET orders (kitchen/pass)
-  - PATCH order status
+- [x] Define minimal entities: MenuItem, Order, OrderItem, Status
+- [x] Freeze routes and payloads for:
+  - [x] GET menu
+  - [x] POST order
+  - [x] GET orders (kitchen/pass)
+  - [x] PATCH order status
 
 Backend
-- Implement API handlers for the above routes
-- Add validation for payloads (minimum viable)
-- Add error responses with consistent shape
+- [x] Implement API handlers for the above routes
+- [x] Add validation for payloads (minimum viable)
+- [x] Add error responses with consistent shape
 
 Database
 - Choose and wire local persistence (e.g., SQLite)

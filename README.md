@@ -130,6 +130,88 @@ Alexander — UI/UX authority and design standards
 
 ---
 
+## API Specification (MVP)
+
+### Endpoints
+
+| Method | Path | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/menu` | List all menu items |
+| `GET` | `/api/orders` | List all orders (most recent first) |
+| `POST` | `/api/orders` | Create a new order |
+| `PATCH` | `/api/orders/:id` | Update order status or item status |
+
+### Data Shapes
+
+#### MenuItem
+```typescript
+interface MenuItem {
+  id: string;
+  name: string;
+  category: 'Κρύα' | 'Ζεστές' | 'Ψησταριά' | 'Μαγειρευτό' | 'Ποτά';
+  price?: number;
+}
+```
+
+#### Order
+```typescript
+interface Order {
+  id: string;
+  tableNumber: string;
+  waiterName: string;
+  items: OrderItem[];
+  timestamp: number; // ms
+  status: 'pending' | 'completed' | 'cancelled';
+}
+```
+
+#### OrderItem
+```typescript
+interface OrderItem {
+  id: string;
+  name: string;
+  quantity: number;
+  category: OrderCategory;
+  itemStatus: 'pending' | 'ready' | 'delivered';
+}
+```
+
+### Payloads
+
+#### Create Order (`POST /api/orders`)
+```json
+{
+  "tableNumber": "5",
+  "waiterName": "Γιώργος",
+  "items": [
+    {
+      "id": "temp-1",
+      "name": "Μπριζόλα Χοιρινή",
+      "quantity": 2,
+      "category": "Ψησταριά",
+      "itemStatus": "pending"
+    }
+  ]
+}
+```
+
+#### Update Order Status (`PATCH /api/orders/:id`)
+```json
+{
+  "status": "completed"
+}
+```
+
+#### Update Item Status (`PATCH /api/orders/:id`)
+```json
+{
+  "itemId": "item-1",
+  "itemStatus": "ready"
+}
+```
+
+---
+
 ## Legal Notice
 
 All code, documentation, structures, and specifications in this challenge are owned by:

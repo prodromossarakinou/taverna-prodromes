@@ -54,3 +54,9 @@
     - Διαχωρισμός του τίτλου από τα φίλτρα σε δύο διακριτά τμήματα.
     - Εφαρμογή χρωμάτων `bg-slate-800` (selected) και `bg-white` (unselected) με γκρι περίγραμμα για μέγιστη αντίθεση και καθαρότητα.
     - Διασφάλιση συμβατότητας WCAG AAA για την επιλεγμένη κατάσταση.
+- **2026-02-16 12:45**: Υλοποίηση του minimal API layer για το MVP.
+    - Ορισμός των βασικών entities (`MenuItem`, `Order`, `OrderItem`, `OrderStatus`) στο `types/order.ts`.
+    - Δημιουργία των interfaces για τα repositories (`lib/repositories/interfaces.ts`).
+    - Υλοποίηση mock repositories (`lib/repositories/mock.ts`) για προσομοίωση βάσης δεδομένων.
+    - Δημιουργία API routes (`GET /api/menu`, `GET /api/orders`, `POST /api/orders`, `PATCH /api/orders/[id]`).
+    - Προσθήκη βασικού validation στα payloads και διαμόρφωση της API τεκμηρίωσης στο `README.md`.
