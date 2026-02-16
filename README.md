@@ -212,6 +212,25 @@ interface OrderItem {
 
 ---
 
+## Database Connection Details
+
+For development and MVP integration, the PostgreSQL database is provisioned via Docker.
+
+### PostgreSQL
+- **Host:** `localhost`
+- **Port:** `5432`
+- **Database:** `appdb`
+- **User:** `appuser`
+- **Password:** `apppass`
+- **Connection String:** `postgresql://appuser:apppass@localhost:5432/appdb`
+
+### pgAdmin (Web Interface)
+- **URL:** `http://localhost:5050`
+- **Username:** `admin@example.com`
+- **Password:** `adminpass`
+
+---
+
 ## Legal Notice
 
 All code, documentation, structures, and specifications in this challenge are owned by:

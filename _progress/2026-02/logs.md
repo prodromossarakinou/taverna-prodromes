@@ -60,3 +60,7 @@
     - Υλοποίηση mock repositories (`lib/repositories/mock.ts`) για προσομοίωση βάσης δεδομένων.
     - Δημιουργία API routes (`GET /api/menu`, `GET /api/orders`, `POST /api/orders`, `PATCH /api/orders/[id]`).
     - Προσθήκη βασικού validation στα payloads και διαμόρφωση της API τεκμηρίωσης στο `README.md`.
+- **2026-02-16 13:00**: Provisioning της PostgreSQL βάσης δεδομένων μέσω Docker.
+    - Δημιουργία `docker-compose.yml` με υπηρεσίες `db` (Postgres 16) και `pgadmin`.
+    - Ρύθμιση persistent volumes και healthchecks.
+    - Ενημέρωση του `README.md` με τα στοιχεία σύνδεσης (host, port, credentials).
