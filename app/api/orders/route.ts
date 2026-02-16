@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     const newOrder = await orderRepository.createOrder({
       tableNumber: body.tableNumber,
       waiterName: body.waiterName || 'Σερβιτόρος',
+      extraNotes: body.extraNotes,
       items: body.items,
     });
 

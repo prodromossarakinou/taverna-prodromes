@@ -8,9 +8,10 @@ datasource db {
 }
 
 model MenuItem {
-  id       String @id @default(cuid())
-  name     String
-  category String
+  id         String  @id @default(cuid())
+  name       String
+  category   String
+  extraNotes String?
 }
 
 model Order {
@@ -19,15 +20,17 @@ model Order {
   waiterName  String
   timestamp   DateTime    @default(now())
   status      String      @default("pending")
+  extraNotes  String?
   items       OrderItem[]
 }
 
 model OrderItem {
-  id         String @id @default(cuid())
+  id         String  @id @default(cuid())
   name       String
   quantity   Int
   category   String
-  itemStatus String @default("pending")
+  itemStatus String  @default("pending")
+  extraNotes String?
   orderId    String
-  order      Order  @relation(fields: [orderId], references: [id])
+  order      Order   @relation(fields: [orderId], references: [id])
 }

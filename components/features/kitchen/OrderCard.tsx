@@ -47,9 +47,16 @@ export function OrderCard({
           <span className="text-xs font-bold px-2 py-1 rounded bg-blue-600 text-white">
             #{index + 1}
           </span>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-            Τραπέζι {order.tableNumber}
-          </h3>
+          <div className="flex flex-col">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">
+              Τραπέζι {order.tableNumber}
+            </h3>
+            {order.extraNotes && (
+              <span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold uppercase truncate max-w-[150px]">
+                Σημ: {order.extraNotes}
+              </span>
+            )}
+          </div>
         </div>
         <Button
           variant="ghost"

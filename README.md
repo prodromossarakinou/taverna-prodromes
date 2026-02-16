@@ -150,6 +150,7 @@ interface MenuItem {
   name: string;
   category: 'Κρύα' | 'Ζεστές' | 'Ψησταριά' | 'Μαγειρευτό' | 'Ποτά';
   price?: number;
+  extraNotes?: string;
 }
 ```
 
@@ -162,6 +163,7 @@ interface Order {
   items: OrderItem[];
   timestamp: number; // ms
   status: 'pending' | 'completed' | 'cancelled';
+  extraNotes?: string;
 }
 ```
 
@@ -173,6 +175,7 @@ interface OrderItem {
   quantity: number;
   category: OrderCategory;
   itemStatus: 'pending' | 'ready' | 'delivered';
+  extraNotes?: string;
 }
 ```
 

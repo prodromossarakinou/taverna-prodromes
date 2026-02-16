@@ -60,6 +60,7 @@ export function WaiterView() {
   const { addOrder } = useOrders();
   const [tableNumber, setTableNumber] = useState('');
   const [waiterName, setWaiterName] = useState('');
+  const [extraNotes, setExtraNotes] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<OrderCategory>('Κρύα');
   const [currentOrder, setCurrentOrder] = useState<OrderItem[]>([]);
 
@@ -104,6 +105,14 @@ export function WaiterView() {
     setCurrentOrder(prev => prev.filter(item => item.id !== itemId));
   };
 
+  const updateItemNotes = (itemId: string, notes: string) => {
+    setCurrentOrder(prev =>
+      prev.map(item =>
+        item.id === itemId ? { ...item, extraNotes: notes || null } : item
+      )
+    );
+  };
+
   const submitOrder = () => {
     if (!tableNumber.trim()) {
       toast.error('Παρακαλώ εισάγετε αριθμό τραπεζιού');
@@ -119,11 +128,13 @@ export function WaiterView() {
       tableNumber: tableNumber.trim(),
       items: currentOrder,
       waiterName: waiterName.trim() || 'Σερβιτόρος',
+      extraNotes: extraNotes.trim() || null,
     });
 
     toast.success(`Παραγγελία για τραπέζι ${tableNumber} στάλθηκε!`);
     setCurrentOrder([]);
     setTableNumber('');
+    setExtraNotes('');
   };
 
   const clearOrder = () => {
@@ -138,6 +149,8 @@ export function WaiterView() {
         setTableNumber={setTableNumber}
         waiterName={waiterName}
         setWaiterName={setWaiterName}
+        extraNotes={extraNotes}
+        setExtraNotes={setExtraNotes}
       />
 
       <CategorySelector
@@ -155,6 +168,7 @@ export function WaiterView() {
       <OrderSummary
         currentOrder={currentOrder}
         onUpdateQuantity={updateQuantity}
+        onUpdateNotes={updateItemNotes}
         onClearOrder={clearOrder}
         onSubmitOrder={submitOrder}
         categoryColors={CATEGORY_COLORS}

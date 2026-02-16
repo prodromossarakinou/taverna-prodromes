@@ -22,13 +22,20 @@ export function OrderItemRow({ item, onClick }: OrderItemRowProps) {
       onClick={onClick}
       className={`w-full text-right py-1 px-2 rounded border-2 transition-all ${statusStyles[status]}`}
     >
-      <div className="flex items-center justify-end gap-3">
-        <span className="text-sm font-medium">
-          {item.name}
-        </span>
-        <span className="text-lg font-bold">
-          ×{item.quantity}
-        </span>
+      <div className="flex flex-col">
+        <div className="flex items-center justify-end gap-3">
+          <span className="text-sm font-medium">
+            {item.name}
+          </span>
+          <span className="text-lg font-bold">
+            ×{item.quantity}
+          </span>
+        </div>
+        {item.extraNotes && (
+          <div className="text-[10px] font-bold italic opacity-80 -mt-1">
+            {item.extraNotes}
+          </div>
+        )}
       </div>
     </button>
   );

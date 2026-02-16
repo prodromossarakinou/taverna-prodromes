@@ -9,6 +9,8 @@ interface WaiterHeaderProps {
   setTableNumber: (val: string) => void;
   waiterName: string;
   setWaiterName: (val: string) => void;
+  extraNotes: string | null;
+  setExtraNotes: (val: string) => void;
 }
 
 export function WaiterHeader({
@@ -16,6 +18,8 @@ export function WaiterHeader({
   setTableNumber,
   waiterName,
   setWaiterName,
+  extraNotes,
+  setExtraNotes,
 }: WaiterHeaderProps) {
   return (
     <div className="bg-linear-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 text-white p-4 shadow-lg">
@@ -44,6 +48,17 @@ export function WaiterHeader({
             className="bg-white/10 border-white/20 h-12 text-white placeholder:text-white/50 focus-visible:ring-white/30"
           />
         </div>
+      </div>
+      <div className="mt-3">
+        <Label htmlFor="notes" className="text-white text-xs mb-1">Σημειώσεις Παραγγελίας</Label>
+        <Input
+          id="notes"
+          type="text"
+          value={extraNotes || ''}
+          onChange={(e) => setExtraNotes(e.target.value)}
+          placeholder="π.χ. Όλα μαζί, όχι κρεμμύδι κλπ."
+          className="bg-white/10 border-white/20 h-10 text-white placeholder:text-white/50 focus-visible:ring-white/30"
+        />
       </div>
     </div>
   );

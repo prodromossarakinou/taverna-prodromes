@@ -41,12 +41,14 @@ export class PrismaOrderRepository implements IOrderRepository {
         tableNumber: orderData.tableNumber,
         waiterName: orderData.waiterName,
         status: 'pending',
+        extraNotes: orderData.extraNotes,
         items: {
           create: orderData.items.map(item => ({
             name: item.name,
             quantity: item.quantity,
             category: item.category,
             itemStatus: 'pending',
+            extraNotes: item.extraNotes,
           })),
         },
       },

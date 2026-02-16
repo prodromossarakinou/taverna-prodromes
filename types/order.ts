@@ -8,6 +8,7 @@ export interface MenuItem {
   name: string;
   category: OrderCategory;
   price?: number; // Optional for MVP
+  extraNotes?: string | null;
 }
 
 export interface OrderItem {
@@ -16,6 +17,7 @@ export interface OrderItem {
   quantity: number;
   category: OrderCategory;
   itemStatus: ItemStatus;
+  extraNotes?: string | null;
 }
 
 export interface Order {
@@ -25,4 +27,5 @@ export interface Order {
   items: OrderItem[];
   timestamp: number;
   status: OrderStatus;
+  extraNotes?: string | null;
 }

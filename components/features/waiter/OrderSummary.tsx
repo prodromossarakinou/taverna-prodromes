@@ -9,6 +9,7 @@ import { OrderItem, OrderCategory } from '@/types/order';
 interface OrderSummaryProps {
   currentOrder: OrderItem[];
   onUpdateQuantity: (id: string, delta: number) => void;
+  onUpdateNotes: (id: string, notes: string) => void;
   onClearOrder: () => void;
   onSubmitOrder: () => void;
   categoryColors: Record<OrderCategory, string>;
@@ -17,6 +18,7 @@ interface OrderSummaryProps {
 export function OrderSummary({
   currentOrder,
   onUpdateQuantity,
+  onUpdateNotes,
   onClearOrder,
   onSubmitOrder,
   categoryColors,
@@ -42,9 +44,18 @@ export function OrderSummary({
             <div key={item.id} className="flex items-center justify-between bg-gray-100 dark:bg-gray-700/80 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
               <div className="flex-1">
                 <div className="font-medium text-gray-900 dark:text-white">{item.name}</div>
-                <Badge className={`${categoryColors[item.category]} text-white text-[10px] mt-1 border-transparent`}>
-                  {item.category}
-                </Badge>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge className={`${categoryColors[item.category]} text-white text-[10px] border-transparent`}>
+                    {item.category}
+                  </Badge>
+                  <input
+                    type="text"
+                    value={item.extraNotes || ''}
+                    onChange={(e) => onUpdateNotes(item.id, e.target.value)}
+                    placeholder="Σημειώσεις..."
+                    className="text-[10px] bg-transparent border-none focus:ring-0 p-0 text-gray-500 dark:text-gray-400 placeholder:text-gray-400 dark:placeholder:text-gray-500 w-full"
+                  />
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <Button size="sm" variant="outline" onClick={() => onUpdateQuantity(item.id, -1)} className="h-8 w-8 p-0 border-gray-200 dark:border-gray-600">
