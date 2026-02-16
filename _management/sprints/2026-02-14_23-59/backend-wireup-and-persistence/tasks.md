@@ -16,16 +16,16 @@ Backend
 - [x] Add error responses with consistent shape
 
 Database
-- Choose and wire local persistence (e.g., SQLite)
-- Define schema/migrations
-- Persist menu and orders
-- Verify restart persistence
+- [x] Choose and wire local persistence (e.g., SQLite) -> **PostgreSQL chosen**
+- [x] Define schema/migrations
+- [x] Persist menu and orders
+- [x] Verify restart persistence
 
 UI Wireup
-- Replace static UI data with API fetches
-- Implement loading/empty/error states
-- Wire order creation flow end-to-end
-- Wire kitchen order list and status transitions
+- [x] Replace static UI data with API fetches
+- [x] Implement loading/empty/error states
+- [x] Wire order creation flow end-to-end
+- [x] Wire kitchen order list and status transitions
 
 Testing / Verification
 - Manual E2E run on LAN (browser client)
@@ -33,4 +33,10 @@ Testing / Verification
 - Verify basic error handling
 
 ## Completed
-- UI corrections only (from previous sprint work)
+- UI corrections and modularization (Waiter/Kitchen views)
+- API Layer implementation (Menu, Orders, Status updates)
+- PostgreSQL provisioning via Docker
+- Prisma ORM integration and schema setup
+- Menu seeding (26 items)
+- Full support for `extraNotes` across DB and UI
+- Verification of end-to-end data flow (Waiter -> DB -> Kitchen)

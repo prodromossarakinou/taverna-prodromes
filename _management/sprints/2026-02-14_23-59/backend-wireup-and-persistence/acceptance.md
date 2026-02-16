@@ -10,5 +10,5 @@ Sprint is accepted when all are true:
 - Error states exist for at least: loading, empty, failed request
 - Basic payload validation prevents malformed orders from being stored
 
-Sprint status: OPEN
+Sprint status: ACCEPTED (verified by Sarah)
 Acceptance owner: Michael
