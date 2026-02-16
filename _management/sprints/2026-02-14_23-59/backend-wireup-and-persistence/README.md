@@ -1,3 +1,7 @@
+Sprint Status: CLOSED
+Closed by: Michael
+Verified by: Sarah
+
 # Sprint — Backend Wireup and Persistence
 
 Sprint Name: backend-wireup-and-persistence  

@@ -23,10 +23,18 @@ Backend connectivity and database integration are not implemented yet and are pl
 
 ## Not Completed / Pending
 
-- Backend API integration for UI (end-to-end data flow)
-- Database integration and persistence wiring
 - Real-time updates mechanism (if required)
 - Printing pipeline
+
+## Backend & Persistence Layer — Completed
+
+- Next.js API implemented
+- Mock repositories replaced with Prisma repositories
+- PostgreSQL via Docker provisioned
+- Prisma schema + migrations applied
+- Menu + Orders persisted
+- extraNotes supported across DB + UI
+- End-to-end verified (Waiter → DB → Kitchen)
 
 ## Notes
 
