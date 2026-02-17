@@ -13,6 +13,27 @@ Multiple projects may be executed under this challenge. The order system is one 
 
 ---
 
+## Challenge Day Progress
+
+Start Date: 17-02-2026  
+Challenge Length: 100 days
+
+Current Day: Day 1 / 100  
+Status: ACTIVE
+
+Tracking Rules:
+
+- Each calendar day must produce at least one meaningful commit
+- Each commit must have a `_progress/<year-month>/<commit>.md` entry
+- Sprint work is tracked under `_management/sprints`
+- Backlog is tracked under `_management/backlog/<date>/tasks.md`
+
+Day Log:
+
+- Day 1 — Challenge kickoff, backlog model initialized, sprint + progress system active
+
+---
+
 ## Challenge Model
 
 Duration: 100 consecutive days  
