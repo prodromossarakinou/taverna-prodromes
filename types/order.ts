@@ -2,6 +2,12 @@ export type OrderCategory = 'Κρύα' | 'Ζεστές' | 'Ψησταριά' | '
 
 export type ItemStatus = 'pending' | 'ready' | 'delivered';
 export type OrderStatus = 'pending' | 'completed' | 'cancelled';
+export type WaiterMode = 'new' | 'view' | 'extras';
+
+export interface WaiterParams {
+  orderId?: string;
+  mode: WaiterMode;
+}
 
 export interface MenuItem {
   id: string;
@@ -28,4 +34,6 @@ export interface Order {
   timestamp: number;
   status: OrderStatus;
   extraNotes?: string | null;
+  isExtra?: boolean;
+  parentId?: string;
 }

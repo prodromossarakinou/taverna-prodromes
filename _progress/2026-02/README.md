@@ -35,6 +35,13 @@ Backend connectivity and database integration are not implemented yet and are pl
 - Menu + Orders persisted
 - extraNotes supported across DB + UI
 - End-to-end verified (Waiter → DB → Kitchen)
+- Waiter Order Summary UI/UX adjustments (30vh, icon-only actions, dark theme hierarchy, 75/25 split layout)
+- Native browser prompt for item notes in Waiter view
+- UI/UX refinements στο Order Summary (αφαίρεση category badges, μεγέθυνση note button)
+- Native browser confirmation prompts for Submit and Clear actions in Waiter view
+- Refined Extras order behavior (new items only, parent linkage, UI separation)
+- Header UI/UX hard refactor (integrated switcher, removed floating elements, flex flow enforcement)
+- Ενημέρωση sprint `order-flow-ui-improvements` με νέο scope (start order, extras, review)
 
 ## Notes
 

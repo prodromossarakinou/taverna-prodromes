@@ -14,7 +14,12 @@ const CATEGORY_LABELS: Record<OrderCategory, string> = {
   'Ποτά': 'ΠΟΤΑ',
 };
 
-export function KitchenDisplay() {
+interface KitchenDisplayProps {
+  onSwitchView: (view: 'waiter' | 'kitchen') => void;
+  ThemeToggle: React.ReactNode;
+}
+
+export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProps) {
   const { orders, deleteOrder, updateItemStatus } = useOrders();
   const [selectedFilter, setSelectedFilter] = useState<OrderCategory | 'all'>('all');
 
@@ -46,6 +51,8 @@ export function KitchenDisplay() {
         selectedFilter={selectedFilter}
         onFilterChange={setSelectedFilter}
         categoryLabels={CATEGORY_LABELS}
+        onSwitchView={onSwitchView}
+        ThemeToggle={ThemeToggle}
       />
 
       <div className="p-4">

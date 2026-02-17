@@ -6,6 +6,7 @@ import {Order, OrderItem, ItemStatus} from '../types/order';
 interface OrderContextType {
     orders: Order[];
     addOrder: (order: Omit<Order, 'id' | 'timestamp' | 'status'>) => void;
+    updateOrder: (orderId: string, updates: Partial<Order>) => void;
     completeOrder: (orderId: string) => void;
     deleteOrder: (orderId: string) => void;
     updateItemStatus: (orderId: string, itemId: string) => void;
@@ -46,8 +47,18 @@ export function OrderProvider({children}: { children: ReactNode }) {
             id: `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             timestamp: Date.now(),
             status: 'pending',
+            isExtra: (orderData as any).isExtra || false,
+            parentId: (orderData as any).parentId,
         };
-        setOrders(prev => [newOrder, ...prev]);
+        setOrders(prev => [...prev, newOrder]);
+    };
+
+    const updateOrder = (orderId: string, updates: Partial<Order>) => {
+        setOrders(prev =>
+            prev.map(order =>
+                order.id === orderId ? { ...order, ...updates } : order
+            )
+        );
     };
 
     const completeOrder = (orderId: string) => {
@@ -83,7 +94,7 @@ export function OrderProvider({children}: { children: ReactNode }) {
     };
 
     return (
-        <OrderContext.Provider value={{orders, addOrder, completeOrder, deleteOrder, updateItemStatus}}>
+        <OrderContext.Provider value={{orders, addOrder, updateOrder, completeOrder, deleteOrder, updateItemStatus}}>
             {children}
         </OrderContext.Provider>
     );

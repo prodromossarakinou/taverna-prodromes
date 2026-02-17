@@ -49,8 +49,13 @@ export function OrderCard({
           </span>
           <div className="flex flex-col">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">
-              Τραπέζι {order.tableNumber}
+              {order.isExtra ? 'EXTRA — ' : ''}Τραπέζι {order.tableNumber}
             </h3>
+            {order.isExtra && (
+              <span className="text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 font-bold px-1.5 py-0.5 rounded w-fit uppercase">
+                EXTRA
+              </span>
+            )}
             {order.extraNotes && (
               <span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold uppercase truncate max-w-[150px]">
                 Σημ: {order.extraNotes}

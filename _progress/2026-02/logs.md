@@ -80,3 +80,42 @@
     - Προσθήκη δυνατότητας προσθήκης σημειώσεων ανά προϊόν στο `OrderSummary`.
     - Εμφάνιση των σημειώσεων στο Kitchen Display (`OrderCard` και `OrderItemRow`).
     - Επίλυση σφαλμάτων τύπων TypeScript (TS2353) μέσω ευθυγράμμισης με το Prisma schema.
+- **2026-02-17 15:20**: Εφαρμογή UI/UX προσαρμογών στο `OrderSummary.tsx` σύμφωνα με τις οδηγίες του Alexander.
+    - Καθορισμός σταθερού ύψους 30vh και αφαίρεση του τίτλου της ενότητας.
+    - Αναδιάταξη των κουμπιών δράσης με Proportional layout (70% Submit / 30% Clear).
+    - Μετατροπή των κουμπιών σε icon-only με μεγεθυμένα εικονίδια (Submit: size-8, Clear: size-6).
+    - Ενημέρωση των χρωμάτων σε Dark Mode (Background: gray-900, Card/Border: gray-800/700) για καλύτερη ιεραρχία και μειωμένη καταπόνηση των ματιών.
+- **2026-02-17 15:25**: Διόρθωση διάταξης κουμπιών δράσης στο `OrderSummary.tsx`.
+    - Εφαρμογή οριζόντιου διαχωρισμού 75/25 μεταξύ λίστας προϊόντων και κουμπιών.
+    - Μετατροπή της διάταξης των κουμπιών σε κάθετη στήλη (Submit 70% ύψος / Clear 30% ύψος).
+    - Προσθήκη αριστερού περιγράμματος (border-l) για οπτικό διαχωρισμό της στήλης ενεργειών.
+- **2026-02-17 15:45**: Αντικατάσταση των AlertDialog με native window.confirm() στο `WaiterView.tsx`.
+    - Κατάργηση των state `submitDialogOpen` και `clearDialogOpen`.
+    - Απλοποίηση των handlers `submitOrder` και `clearOrder` με χρήση του `window.confirm()`.
+    - Μείωση της πολυπλοκότητας του κώδικα και χρήση native browser patterns για επιβεβαίωση ενεργειών.
+- **2026-02-17 16:15**: Refined Extras order behavior in `WaiterView.tsx` and `OrderSummary.tsx`.
+    - Extras orders now contain ONLY newly added items, satisfying the Data Rule.
+    - Base order items are preserved as a read-only reference in `originalItems` state during Extras mode.
+    - `currentOrder` state is reset to empty upon entering Extras mode to capture only new additions.
+    - `submitOrder` handler updated to send only `currentOrder` (new extras) and link to parent via `parentId`.
+    - Order-level notes from the base order are excluded from the Extras ticket.
+    - UI in `OrderSummary` now clearly separates "Original Order" (read-only) from "New Extras" with visual labels.
+- **2026-02-17 16:35**: Hard structural change to header layout and mode selection.
+    - Completely removed floating/fixed wrapper from `app/page.tsx`.
+    - Integrated `ThemeToggle` and mode selector controls directly into `WaiterHeader.tsx` and `KitchenHeader.tsx`.
+    - Enforced normal document flow for headers (flex row with title on left and actions on right).
+    - Removed all `fixed`, `absolute`, `sticky`, and `z-index` classes from the selector and header render chain.
+    - Cleaned up residual `relative` and `z-10` positioning from `OrderSummary.tsx` mode badges.
+    - Updated `WaiterView.tsx` and `KitchenDisplay.tsx` to pass view and mode control props to headers.
+    - Verified that headers and selectors no longer overlay content during scroll.
+- **2026-02-17 16:00**: Ενημέρωση του sprint `order-flow-ui-improvements` με νέο πεδίο εφαρμογής.
+    - Επικαιροποίηση των αρχείων `README.md`, `tasks.md` και `acceptance.md`.
+    - Προσθήκη νέων στόχων: ρητή έναρξη παραγγελίας (start order), διαχείριση extras ανά είδος και βήμα ελέγχου (review) πριν την υποβολή.
+- **2026-02-17 15:40**: UI/UX refinement στο `OrderSummary.tsx`.
+    - Αφαίρεση του category badge από τα είδη της παραγγελίας για μείωση του θορύβου.
+    - Μεγέθυνση του κουμπιού σημειώσεων (MessageSquare) για ευκολότερη πρόσβαση.
+- **2026-02-17 15:35**: Αντικατάσταση του input σημειώσεων με native browser prompt στο `WaiterView.tsx`.
+    - Κατάργηση του `updateItemNotes` και υλοποίηση του `openNoteDialog` με `window.prompt`.
+    - Προσθήκη εικονιδίου `MessageSquare` στο `OrderSummary.tsx` για την ενεργοποίηση του prompt.
+    - Εμφάνιση των σημειώσεων ως πλάγιο γκρι κείμενο κάτω από το όνομα του προϊόντος.
+    - Απλοποίηση της αλληλεπίδρασης για ταχύτερη καταχώρηση δεδομένων από τους σερβιτόρους.

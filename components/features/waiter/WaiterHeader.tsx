@@ -2,63 +2,122 @@
 
 import React from 'react';
 import { Label } from '@/components/ui/Label';
-import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
 
 interface WaiterHeaderProps {
   tableNumber: string;
-  setTableNumber: (val: string) => void;
+  onEditTable: () => void;
   waiterName: string;
-  setWaiterName: (val: string) => void;
+  onEditWaiter: () => void;
   extraNotes: string | null;
-  setExtraNotes: (val: string) => void;
+  onEditNotes: () => void;
+  readOnly?: boolean;
+  // View Switcher Props
+  onSwitchView: (view: 'waiter' | 'kitchen') => void;
+  currentMode: string;
+  onStartNew: () => void;
+  onRequestPick: (mode: 'view' | 'extras') => void;
+  onOpenMobileMenu: () => void;
 }
 
 export function WaiterHeader({
   tableNumber,
-  setTableNumber,
+  onEditTable,
   waiterName,
-  setWaiterName,
+  onEditWaiter,
   extraNotes,
-  setExtraNotes,
-}: WaiterHeaderProps) {
+  onEditNotes,
+  readOnly = false,
+  onSwitchView,
+  currentMode,
+  onStartNew,
+  onRequestPick,
+  onOpenMobileMenu,
+  ThemeToggle,
+}: WaiterHeaderProps & { ThemeToggle: React.ReactNode }) {
   return (
-    <div className="bg-linear-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 text-white p-4 shadow-lg">
-      <h1 className="text-xl font-bold mb-3">Λήψη Παραγγελίας</h1>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label htmlFor="table" className="text-white text-xs mb-1">Τραπέζι</Label>
-          <Input
-            id="table"
-            type="text"
-            inputMode="numeric"
-            value={tableNumber}
-            onChange={(e) => setTableNumber(e.target.value)}
-            placeholder="π.χ. 12"
-            className="bg-white/10 border-white/20 h-12 text-lg text-white placeholder:text-white/50 focus-visible:ring-white/30"
-          />
+    <div className="bg-linear-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 text-white px-6 py-4 shadow-lg">
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col">
+          <h1 className="text-xl font-bold">Λήψη Παραγγελίας</h1>
+          <div className="flex gap-2 mt-2">
+            <Button
+              onClick={onEditTable}
+              disabled={readOnly}
+              variant="secondary"
+              className="h-8 px-3 flex items-center gap-2 bg-white/10 border-white/20 text-white hover:bg-white/15 text-[10px]"
+            >
+              <span className="opacity-80 uppercase font-bold">Τραπέζι</span>
+              <span className="font-bold">{tableNumber || '?'}</span>
+            </Button>
+            <Button
+              onClick={onEditWaiter}
+              disabled={readOnly}
+              variant="secondary"
+              className="h-8 px-3 flex items-center gap-2 bg-white/10 border-white/20 text-white hover:bg-white/15 text-[10px]"
+            >
+              <span className="opacity-80 uppercase font-bold">Σερβιτόρος</span>
+              <span className="font-bold">{waiterName || '?'}</span>
+            </Button>
+          </div>
         </div>
-        <div>
-          <Label htmlFor="waiter" className="text-white text-xs mb-1">Σερβιτόρος</Label>
-          <Input
-            id="waiter"
-            type="text"
-            value={waiterName}
-            onChange={(e) => setWaiterName(e.target.value)}
-            placeholder="Όνομα"
-            className="bg-white/10 border-white/20 h-12 text-white placeholder:text-white/50 focus-visible:ring-white/30"
-          />
+
+        <div className="flex items-center gap-3">
+          {ThemeToggle}
+          <div className="hidden sm:flex items-center gap-2 bg-black/10 p-1 rounded-lg border border-white/10">
+            <Button 
+              variant={currentMode === 'new' ? 'default' : 'ghost'} 
+              size="sm" 
+              onClick={onStartNew}
+              className="h-9 px-3 text-xs"
+            >
+              New
+            </Button>
+            <Button 
+              variant={currentMode === 'view' ? 'default' : 'ghost'} 
+              size="sm" 
+              onClick={() => onRequestPick('view')}
+              className="h-9 px-3 text-xs"
+            >
+              View
+            </Button>
+            <Button 
+              variant={currentMode === 'extras' ? 'default' : 'ghost'} 
+              size="sm" 
+              onClick={() => onRequestPick('extras')}
+              className="h-9 px-3 text-xs"
+            >
+              Extras
+            </Button>
+            <div className="w-px h-4 bg-white/20 mx-1" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onSwitchView('kitchen')}
+              className="h-9 px-3 text-xs"
+            >
+              Kitchen
+            </Button>
+          </div>
+          
+          <div className="sm:hidden">
+            <Button size="sm" variant="secondary" onClick={onOpenMobileMenu} className="h-10 px-4 bg-white text-blue-700 font-bold">
+              Menu
+            </Button>
+          </div>
         </div>
       </div>
+      
       <div className="mt-3">
-        <Label htmlFor="notes" className="text-white text-xs mb-1">Σημειώσεις Παραγγελίας</Label>
-        <Input
-          id="notes"
-          type="text"
-          value={extraNotes || ''}
-          onChange={(e) => setExtraNotes(e.target.value)}
-          placeholder="π.χ. Όλα μαζί, όχι κρεμμύδι κλπ."
-          className="bg-white/10 border-white/20 h-10 text-white placeholder:text-white/50 focus-visible:ring-white/30"
-        />
+        <Button
+          onClick={onEditNotes}
+          disabled={readOnly}
+          variant="secondary"
+          className="w-full h-9 justify-start bg-white/10 border-white/20 text-white hover:bg-white/15 px-4 text-xs"
+        >
+          <span className="opacity-80 uppercase font-bold mr-2">Σημειώσεις:</span>
+          <span className="truncate">{extraNotes?.trim() ? extraNotes : 'Προσθήκη σημειώσεων'}</span>
+        </Button>
       </div>
     </div>
   );
