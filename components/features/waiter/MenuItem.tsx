@@ -1,17 +1,18 @@
 'use client';
 
 import React, { useState } from 'react';
+import { MenuItem as MenuItemType } from '@/types/order';
 
 interface MenuItemProps {
-  name: string;
-  onAdd: (name: string) => void;
+  item: MenuItemType;
+  onAdd: (item: MenuItemType) => void;
 }
 
-export function MenuItem({ name, onAdd }: MenuItemProps) {
+export function MenuItem({ item, onAdd }: MenuItemProps) {
   const [isAnimate, setIsAnimate] = useState(false);
 
   const handleClick = () => {
-    onAdd(name);
+    onAdd(item);
     setIsAnimate(true);
     setTimeout(() => setIsAnimate(false), 300);
   };
@@ -27,7 +28,7 @@ export function MenuItem({ name, onAdd }: MenuItemProps) {
         ${isAnimate ? 'animate-heart-beat' : ''}
       `}
     >
-      <span className="font-medium text-foreground leading-tight">{name}</span>
+      <span className="font-medium text-foreground leading-tight">{item.name}</span>
     </button>
   );
 }

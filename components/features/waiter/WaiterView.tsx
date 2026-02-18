@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useOrders } from '@/contexts/OrderContext';
-import { OrderCategory, OrderItem, WaiterParams } from '@/types/order';
+import { MenuItem as MenuItemType, OrderCategory, OrderItem, WaiterParams } from '@/types/order';
 import { toast } from 'sonner';
 import { WaiterHeader } from './WaiterHeader';
 import { Popup } from '@/components/ui/Popup';
@@ -22,45 +22,6 @@ interface WaiterViewProps {
   onOpenMobileMenu: () => void;
   ThemeToggle: React.ReactNode;
 }
-
-const MENU_ITEMS: Record<OrderCategory, string[]> = {
-  'Κρύα': [
-    'Χωριάτικη Σαλάτα',
-    'Πράσινη Σαλάτα',
-    'Ρόκα με Παρμεζάνα',
-    'Καίσαρ',
-    'Ντοματοσαλάτα',
-  ],
-  'Ζεστές': [
-    'Ζεστή Σαλάτα με Κοτόπουλο',
-    'Σαλάτα με Γαρίδες',
-  ],
-  'Ψησταριά': [
-    'Μπριζόλα Χοιρινή',
-    'Μπριζόλα Μοσχαρίσια',
-    'Κοτόπουλο Φιλέτο',
-    'Μπιφτέκι',
-    'Σουβλάκι Χοιρινό',
-    'Σουβλάκι Κοτόπουλο',
-  ],
-  'Μαγειρευτό': [
-    'Μουσακάς',
-    'Παστίτσιο',
-    'Παπουτσάκια',
-    'Γιουβέτσι',
-    'Κοκκινιστό',
-  ],
-  'Ποτά': [
-    'Κόκα Κόλα',
-    'Σπράιτ',
-    'Φάντα',
-    'Νερό',
-    'Μπύρα',
-    'Κρασί Λευκό',
-    'Κρασί Κόκκινο',
-    'Καφές',
-  ],
-};
 
 const CATEGORY_COLORS: Record<OrderCategory, string> = {
   'Κρύα': 'bg-green-500',
@@ -87,6 +48,8 @@ export function WaiterView({
   const [selectedCategory, setSelectedCategory] = useState<OrderCategory>('Κρύα');
   const [currentOrder, setCurrentOrder] = useState<OrderItem[]>([]);
   const [originalItems, setOriginalItems] = useState<OrderItem[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
+  const [menuLoading, setMenuLoading] = useState(false);
   // Popup states for header fields and item notes
   const [tableOpen, setTableOpen] = useState(false);
   const [waiterOpen, setWaiterOpen] = useState(false);
@@ -102,6 +65,13 @@ export function WaiterView({
   // Confirmation popups for submit & clear
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
+
+  const menuCategories = Array.from(
+    new Set(menuItems.map((item) => item.category))
+  ) as OrderCategory[];
+  const menuItemsForCategory = menuItems.filter(
+    (item) => item.category === selectedCategory
+  );
 
   // Validate params and load order data if in view or extras mode
   useEffect(() => {
@@ -137,11 +107,48 @@ export function WaiterView({
     }
   }, [mode, orderId, orders, onBack]);
 
-  const addItemToOrder = (itemName: string) => {
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadMenu = async () => {
+      setMenuLoading(true);
+      try {
+        const response = await fetch('/api/menu');
+        if (!response.ok) {
+          throw new Error('Failed to fetch menu');
+        }
+        const data = (await response.json()) as MenuItemType[];
+        const activeItems = data.filter((item) => item.active !== false);
+        if (!isMounted) return;
+        setMenuItems(activeItems);
+      } catch (error) {
+        console.error('Error fetching menu:', error);
+        toast.error('Αποτυχία φόρτωσης μενού');
+      } finally {
+        if (isMounted) {
+          setMenuLoading(false);
+        }
+      }
+    };
+
+    loadMenu();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (menuCategories.length > 0 && !menuCategories.includes(selectedCategory)) {
+      setSelectedCategory(menuCategories[0]);
+    }
+  }, [menuCategories, selectedCategory]);
+
+  const addItemToOrder = (menuItem: MenuItemType) => {
     if (mode === 'view') return;
 
     const existingItem = currentOrder.find(
-      item => item.name === itemName && item.category === selectedCategory
+      item => item.name === menuItem.name && item.category === menuItem.category
     );
 
     if (existingItem) {
@@ -155,9 +162,9 @@ export function WaiterView({
     } else {
       const newItem: OrderItem = {
         id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        name: itemName,
+        name: menuItem.name,
         quantity: 1,
-        category: selectedCategory,
+        category: menuItem.category,
         itemStatus: 'pending',
       };
       setCurrentOrder(prev => [...prev, newItem]);
@@ -266,18 +273,30 @@ export function WaiterView({
         ThemeToggle={ThemeToggle}
       />
 
-      {mode !== 'view' && (
+      {mode !== 'view' && menuCategories.length > 0 && (
         <CategorySelector
-          categories={Object.keys(MENU_ITEMS) as OrderCategory[]}
+          categories={menuCategories}
           selectedCategory={selectedCategory}
           onSelect={setSelectedCategory}
           categoryColors={CATEGORY_COLORS}
         />
       )}
 
-      {mode !== 'view' && (
+      {mode !== 'view' && menuLoading && (
+        <div className="flex-1 overflow-y-auto p-4 bg-gray-100 dark:bg-gray-800 text-sm text-muted-foreground">
+          Φόρτωση μενού...
+        </div>
+      )}
+
+      {mode !== 'view' && !menuLoading && menuCategories.length === 0 && (
+        <div className="flex-1 overflow-y-auto p-4 bg-gray-100 dark:bg-gray-800 text-sm text-muted-foreground">
+          Δεν υπάρχουν διαθέσιμα προϊόντα.
+        </div>
+      )}
+
+      {mode !== 'view' && !menuLoading && menuCategories.length > 0 && (
         <MenuGrid
-          items={MENU_ITEMS[selectedCategory]}
+          items={menuItemsForCategory}
           onAddItem={addItemToOrder}
         />
       )}

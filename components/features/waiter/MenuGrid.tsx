@@ -1,11 +1,12 @@
 'use client';
 
 import React from 'react';
+import { MenuItem as MenuItemType } from '@/types/order';
 import { MenuItem } from './MenuItem';
 
 interface MenuGridProps {
-  items: string[];
-  onAddItem: (itemName: string) => void;
+  items: MenuItemType[];
+  onAddItem: (item: MenuItemType) => void;
 }
 
 export function MenuGrid({ items, onAddItem }: MenuGridProps) {
@@ -14,8 +15,8 @@ export function MenuGrid({ items, onAddItem }: MenuGridProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
         {items.map((item) => (
           <MenuItem
-            key={item}
-            name={item}
+            key={item.id}
+            item={item}
             onAdd={onAddItem}
           />
         ))}

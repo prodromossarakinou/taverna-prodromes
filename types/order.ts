@@ -15,6 +15,7 @@ export interface MenuItem {
   category: OrderCategory;
   price?: number; // Optional for MVP
   extraNotes?: string | null;
+  active?: boolean;
 }
 
 export interface OrderItem {

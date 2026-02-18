@@ -14,29 +14,7 @@ interface OrderContextType {
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
-const DUMMY_ORDERS: Order[] = [
-    {
-        id: 'order-1',
-        tableNumber: '5',
-        waiterName: 'Γιώργος',
-        timestamp: Date.now() - 18 * 60000,
-        status: 'pending',
-        items: [
-            {id: 'item-1', name: 'Μπριζόλα Χοιρινή', quantity: 2, category: 'Ψησταριά', itemStatus: 'pending'},
-            {id: 'item-2', name: 'Χωριάτικη Σαλάτα', quantity: 1, category: 'Κρύα', itemStatus: 'ready'},
-        ],
-    },
-    {
-        id: 'order-2',
-        tableNumber: '12',
-        waiterName: 'Μαρία',
-        timestamp: Date.now() - 12 * 60000,
-        status: 'pending',
-        items: [
-            {id: 'item-4', name: 'Μουσακάς', quantity: 3, category: 'Μαγειρευτό', itemStatus: 'pending'},
-        ],
-    },
-];
+const DUMMY_ORDERS: Order[] = [];
 
 export function OrderProvider({children}: { children: ReactNode }) {
     const [orders, setOrders] = useState<Order[]>(DUMMY_ORDERS);

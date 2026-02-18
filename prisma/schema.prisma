@@ -8,10 +8,12 @@ datasource db {
 }
 
 model MenuItem {
-  id         String  @id @default(cuid())
+  id         String  @id
   name       String
   category   String
+  price      Float?
   extraNotes String?
+  active     Boolean @default(true)
 }
 
 model Order {
