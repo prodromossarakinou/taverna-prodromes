@@ -11,7 +11,7 @@ interface KitchenHeaderProps {
   onFilterChange: (filter: OrderCategory | 'all') => void;
   categoryLabels: Record<OrderCategory, string>;
   // View Switcher Props
-  onSwitchView: (view: 'waiter' | 'kitchen') => void;
+  onSwitchView: (view: 'waiter' | 'kitchen' | 'admin') => void;
   ThemeToggle: React.ReactNode;
 }
 
@@ -37,6 +37,14 @@ export function KitchenHeader({
             className="h-9 px-4 bg-white text-blue-700 font-bold"
           >
             Waiter View
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => onSwitchView('admin')}
+            className="h-9 px-4 bg-white text-blue-700 font-bold"
+          >
+            Admin View
           </Button>
         </div>
       </div>

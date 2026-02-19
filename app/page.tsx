@@ -3,15 +3,15 @@
 import React, { useState } from 'react';
 import { WaiterView } from '@/components/features/waiter/WaiterView';
 import { KitchenDisplay } from '@/components/features/kitchen/KitchenDisplay';
+import { AdminView } from '@/components/features/admin/AdminView';
 import { Button } from '@/components/ui/Button';
-import { LayoutDashboard, UtensilsCrossed, Eye, Sparkles, PlusCircle } from 'lucide-react';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { Popup } from '@/components/ui/Popup';
 import { useOrders } from '@/contexts/OrderContext';
 import { WaiterParams, WaiterMode } from '@/types/order';
 
 export default function Home() {
-  const [view, setView] = useState<'waiter' | 'kitchen'>('waiter');
+  const [view, setView] = useState<'waiter' | 'kitchen' | 'admin'>('waiter');
   const { orders } = useOrders();
 
   const [waiterParams, setWaiterParams] = useState<WaiterParams>({ mode: 'new' });
@@ -39,11 +39,13 @@ export default function Home() {
           onOpenMobileMenu={() => setModePopupOpen(true)}
           ThemeToggle={<ThemeToggle />}
         />
-      ) : (
+      ) : view === 'kitchen' ? (
         <KitchenDisplay 
           onSwitchView={setView}
           ThemeToggle={<ThemeToggle />}
         />
+      ) : (
+        <AdminView onSwitchView={setView} ThemeToggle={<ThemeToggle />} />
       )}
 
       {/* Mobile Mode Selector Popup */}
@@ -55,6 +57,7 @@ export default function Home() {
           <div className="h-px bg-border my-2" />
           <Button size="lg" variant={view === 'kitchen' ? 'default' : 'outline'} onClick={() => { setView('kitchen'); setModePopupOpen(false); }}>Kitchen View</Button>
           <Button size="lg" variant={view === 'waiter' ? 'default' : 'outline'} onClick={() => { setView('waiter'); setModePopupOpen(false); }}>Waiter View</Button>
+          <Button size="lg" variant={view === 'admin' ? 'default' : 'outline'} onClick={() => { setView('admin'); setModePopupOpen(false); }}>Admin View</Button>
         </div>
       </Popup>
 

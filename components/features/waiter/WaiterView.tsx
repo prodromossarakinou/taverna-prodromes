@@ -16,7 +16,7 @@ interface WaiterViewProps {
   params: WaiterParams;
   onBack?: () => void;
   // View switcher props passed from page
-  onSwitchView: (view: 'waiter' | 'kitchen') => void;
+  onSwitchView: (view: 'waiter' | 'kitchen' | 'admin') => void;
   onStartNew: () => void;
   onRequestPick: (mode: 'view' | 'extras') => void;
   onOpenMobileMenu: () => void;
@@ -41,15 +41,13 @@ export function WaiterView({
   ThemeToggle,
 }: WaiterViewProps) {
   const { mode, orderId } = params;
-  const { addOrder, updateOrder, orders } = useOrders();
+  const { addOrder, orders, menuItems } = useOrders();
   const [tableNumber, setTableNumber] = useState('');
   const [waiterName, setWaiterName] = useState('');
   const [extraNotes, setExtraNotes] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<OrderCategory>('Κρύα');
   const [currentOrder, setCurrentOrder] = useState<OrderItem[]>([]);
   const [originalItems, setOriginalItems] = useState<OrderItem[]>([]);
-  const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
-  const [menuLoading, setMenuLoading] = useState(false);
   // Popup states for header fields and item notes
   const [tableOpen, setTableOpen] = useState(false);
   const [waiterOpen, setWaiterOpen] = useState(false);
@@ -66,10 +64,11 @@ export function WaiterView({
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
 
+  const activeMenuItems = menuItems.filter((item) => item.active !== false);
   const menuCategories = Array.from(
-    new Set(menuItems.map((item) => item.category))
+    new Set(activeMenuItems.map((item) => item.category))
   ) as OrderCategory[];
-  const menuItemsForCategory = menuItems.filter(
+  const menuItemsForCategory = activeMenuItems.filter(
     (item) => item.category === selectedCategory
   );
 
@@ -107,36 +106,6 @@ export function WaiterView({
     }
   }, [mode, orderId, orders, onBack]);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadMenu = async () => {
-      setMenuLoading(true);
-      try {
-        const response = await fetch('/api/menu');
-        if (!response.ok) {
-          throw new Error('Failed to fetch menu');
-        }
-        const data = (await response.json()) as MenuItemType[];
-        const activeItems = data.filter((item) => item.active !== false);
-        if (!isMounted) return;
-        setMenuItems(activeItems);
-      } catch (error) {
-        console.error('Error fetching menu:', error);
-        toast.error('Αποτυχία φόρτωσης μενού');
-      } finally {
-        if (isMounted) {
-          setMenuLoading(false);
-        }
-      }
-    };
-
-    loadMenu();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   useEffect(() => {
     if (menuCategories.length > 0 && !menuCategories.includes(selectedCategory)) {
@@ -282,19 +251,13 @@ export function WaiterView({
         />
       )}
 
-      {mode !== 'view' && menuLoading && (
-        <div className="flex-1 overflow-y-auto p-4 bg-gray-100 dark:bg-gray-800 text-sm text-muted-foreground">
-          Φόρτωση μενού...
-        </div>
-      )}
-
-      {mode !== 'view' && !menuLoading && menuCategories.length === 0 && (
+      {mode !== 'view' && menuCategories.length === 0 && (
         <div className="flex-1 overflow-y-auto p-4 bg-gray-100 dark:bg-gray-800 text-sm text-muted-foreground">
           Δεν υπάρχουν διαθέσιμα προϊόντα.
         </div>
       )}
 
-      {mode !== 'view' && !menuLoading && menuCategories.length > 0 && (
+      {mode !== 'view' && menuCategories.length > 0 && (
         <MenuGrid
           items={menuItemsForCategory}
           onAddItem={addItemToOrder}

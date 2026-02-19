@@ -15,7 +15,7 @@ const CATEGORY_LABELS: Record<OrderCategory, string> = {
 };
 
 interface KitchenDisplayProps {
-  onSwitchView: (view: 'waiter' | 'kitchen') => void;
+  onSwitchView: (view: 'waiter' | 'kitchen' | 'admin') => void;
   ThemeToggle: React.ReactNode;
 }
 

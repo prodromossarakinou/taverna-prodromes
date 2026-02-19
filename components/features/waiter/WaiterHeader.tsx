@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 
 interface WaiterHeaderProps {
@@ -13,7 +12,7 @@ interface WaiterHeaderProps {
   onEditNotes: () => void;
   readOnly?: boolean;
   // View Switcher Props
-  onSwitchView: (view: 'waiter' | 'kitchen') => void;
+  onSwitchView: (view: 'waiter' | 'kitchen' | 'admin') => void;
   currentMode: string;
   onStartNew: () => void;
   onRequestPick: (mode: 'view' | 'extras') => void;
@@ -97,6 +96,14 @@ export function WaiterHeader({
               className="h-9 px-3 text-xs"
             >
               Kitchen
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onSwitchView('admin')}
+              className="h-9 px-3 text-xs"
+            >
+              Admin
             </Button>
           </div>
           

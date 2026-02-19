@@ -13,9 +13,9 @@ export interface MenuItem {
   id: string;
   name: string;
   category: OrderCategory;
-  price?: number; // Optional for MVP
+  price: number;
+  active: boolean;
   extraNotes?: string | null;
-  active?: boolean;
 }
 
 export interface OrderItem {
