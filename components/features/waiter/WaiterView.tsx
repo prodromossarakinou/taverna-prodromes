@@ -64,11 +64,11 @@ export function WaiterView({
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
 
-  const activeMenuItems = menuItems.filter((item) => item.active !== false);
+  const activeMenuItems: MenuItemType[] = menuItems.filter((item) => item.active);
   const menuCategories = Array.from(
     new Set(activeMenuItems.map((item) => item.category))
   ) as OrderCategory[];
-  const menuItemsForCategory = activeMenuItems.filter(
+  const menuItemsForCategory: MenuItemType[] = activeMenuItems.filter(
     (item) => item.category === selectedCategory
   );
 
@@ -152,11 +152,6 @@ export function WaiterView({
         )
         .filter(item => item.quantity > 0)
     );
-  };
-
-  const removeItem = (itemId: string) => {
-    if (mode === 'view' || mode === 'extras') return;
-    setCurrentOrder(prev => prev.filter(item => item.id !== itemId));
   };
 
   const applyItemNote = (itemId: string, value: string | null) => {
