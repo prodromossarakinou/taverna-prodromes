@@ -12,4 +12,6 @@ export interface IOrderRepository {
   createOrder(order: Omit<Order, 'id' | 'timestamp' | 'status'>): Promise<Order>;
   updateOrderStatus(orderId: string, status: OrderStatus): Promise<Order>;
   updateOrderItemStatus(orderId: string, itemId: string, status: ItemStatus): Promise<Order>;
+  updateOrderItemUnitStatus(orderId: string, unitId: string, status: ItemStatus): Promise<Order>;
+  updateOrderItemUnitsStatus(orderId: string, itemId: string, status: ItemStatus): Promise<Order>;
 }

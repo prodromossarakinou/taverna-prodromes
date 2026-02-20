@@ -25,6 +25,13 @@ export interface OrderItem {
   category: OrderCategory;
   itemStatus: ItemStatus;
   extraNotes?: string | null;
+  units?: OrderItemUnit[];
+}
+
+export interface OrderItemUnit {
+  id: string;
+  status: ItemStatus;
+  unitIndex: number;
 }
 
 export interface Order {
