@@ -2,18 +2,18 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useOrders } from '@/contexts/OrderContext';
-import { OrderCategory } from '@/types/order';
 import { KitchenHeader } from './KitchenHeader';
 import { OrderCard } from './OrderCard';
 import { Button } from '@/components/ui/Button';
+import {
+  DEFAULT_KITCHEN_FILTERS,
+  KITCHEN_FILTER_KEYS,
+  KITCHEN_FILTER_LABELS,
+  KitchenOrderFilterKey,
+  resolveOrderStatus,
+} from './orderStatus';
 
-const CATEGORY_LABELS: Record<OrderCategory, string> = {
-  'Κρύα': 'ΚΡΥΑ ΚΟΥΖΙΝΑ',
-  'Ζεστές': 'ΖΕΣΤΕΣ ΣΑΛΑΤΕΣ',
-  'Ψησταριά': 'ΨΗΣΤΑΡΙΑ',
-  'Μαγειρευτό': 'ΜΑΓΕΙΡΕΥΤΟ',
-  'Ποτά': 'ΠΟΤΑ',
-};
+const FILTER_STORAGE_KEY = 'kitchen-status-filters';
 
 interface KitchenDisplayProps {
   onSwitchView: (view: 'waiter' | 'kitchen' | 'admin') => void;
@@ -22,7 +22,9 @@ interface KitchenDisplayProps {
 
 export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProps) {
   const { orders, deleteOrder, updateItemStatus, refreshOrders } = useOrders();
-  const [selectedFilter, setSelectedFilter] = useState<OrderCategory | 'all'>('all');
+  const [statusFilters, setStatusFilters] = useState<Record<KitchenOrderFilterKey, boolean>>({
+    ...DEFAULT_KITCHEN_FILTERS,
+  });
   const [pendingUpdates, setPendingUpdates] = useState(0);
   const [isApplyingUpdates, setIsApplyingUpdates] = useState(false);
   const mappedOrders = useMemo(
@@ -100,28 +102,58 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
   }, [refreshOrders]);
 
   useEffect(() => {
+    const stored = window.localStorage.getItem(FILTER_STORAGE_KEY);
+    if (!stored) return;
+    try {
+      const parsed = JSON.parse(stored) as KitchenOrderFilterKey[];
+      if (!Array.isArray(parsed)) return;
+      const nextFilters = { ...DEFAULT_KITCHEN_FILTERS };
+      parsed.forEach((key) => {
+        if (key in nextFilters) {
+          nextFilters[key] = true;
+        }
+      });
+      setStatusFilters(nextFilters);
+    } catch (error) {
+      console.error('Failed to parse kitchen filters:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    const enabled = Object.entries(statusFilters)
+      .filter(([, isEnabled]) => isEnabled)
+      .map(([key]) => key);
+    window.localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(enabled));
+  }, [statusFilters]);
+
+  useEffect(() => {
     lastSeenOrdersRef.current = mappedOrders;
     if (pendingUpdates > 0) {
       setPendingUpdates(0);
     }
   }, [mappedOrders]);
 
-  const pendingOrders = useMemo(() => {
-    return mappedOrders
-      .filter(order => order.orderStatus === 'pending')
-      .sort((a, b) => a.createdAt - b.createdAt);
-  }, [mappedOrders]);
-
   const filteredOrders = useMemo(() => {
-    if (selectedFilter === 'all') {
-      return pendingOrders.slice(0, 10);
-    }
-    return pendingOrders
-      .filter(order => 
-        order.items.some(item => item.category === selectedFilter)
-      )
+    return mappedOrders
+      .filter(order => statusFilters[resolveOrderStatus(order)])
+      .sort((a, b) => a.createdAt - b.createdAt)
       .slice(0, 10);
-  }, [pendingOrders, selectedFilter]);
+  }, [mappedOrders, statusFilters]);
+
+  const filteredOrdersCount = useMemo(() => {
+    return mappedOrders.filter(order => statusFilters[resolveOrderStatus(order)]).length;
+  }, [mappedOrders, statusFilters]);
+
+  const handleFilterToggle = (key: KitchenOrderFilterKey) => {
+    setStatusFilters(prev => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
+  const handleFilterReset = () => {
+    setStatusFilters({ ...DEFAULT_KITCHEN_FILTERS });
+  };
 
   const handleItemClick = (orderId: string, itemId: string) => {
     updateItemStatus(orderId, itemId);
@@ -130,10 +162,12 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
   return (
     <div className="min-h-screen bg-background">
       <KitchenHeader
-        pendingCount={pendingOrders.length}
-        selectedFilter={selectedFilter}
-        onFilterChange={setSelectedFilter}
-        categoryLabels={CATEGORY_LABELS}
+        pendingCount={filteredOrdersCount}
+        statusFilters={statusFilters}
+        filterKeys={KITCHEN_FILTER_KEYS}
+        filterLabels={KITCHEN_FILTER_LABELS}
+        onFilterToggle={handleFilterToggle}
+        onFilterReset={handleFilterReset}
         onSwitchView={onSwitchView}
         ThemeToggle={ThemeToggle}
       />
@@ -152,8 +186,6 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
                 index={index}
                 onDelete={deleteOrder}
                 onItemClick={handleItemClick}
-                categoryLabels={CATEGORY_LABELS}
-                selectedFilter={selectedFilter}
               />
             ))}
           </div>

@@ -5,14 +5,22 @@ import { X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Order, OrderCategory, OrderItem } from '@/types/order';
 import { OrderItemRow } from './OrderItemRow';
+import { cn } from '@/components/ui/utils';
+import { getOrderAccent } from './orderStatus';
+
+const CATEGORY_LABELS: Record<OrderCategory, string> = {
+  'Κρύα': 'ΚΡΥΑ ΚΟΥΖΙΝΑ',
+  'Ζεστές': 'ΖΕΣΤΕΣ ΣΑΛΑΤΕΣ',
+  'Ψησταριά': 'ΨΗΣΤΑΡΙΑ',
+  'Μαγειρευτό': 'ΜΑΓΕΙΡΕΥΤΟ',
+  'Ποτά': 'ΠΟΤΑ',
+};
 
 interface OrderCardProps {
   order: Order;
   index: number;
   onDelete: (id: string) => void;
   onItemClick: (orderId: string, itemId: string) => void;
-  categoryLabels: Record<OrderCategory, string>;
-  selectedFilter: OrderCategory | 'all';
 }
 
 export function OrderCard({
@@ -20,13 +28,8 @@ export function OrderCard({
   index,
   onDelete,
   onItemClick,
-  categoryLabels,
-  selectedFilter,
 }: OrderCardProps) {
-  const displayedItems = selectedFilter === 'all' 
-    ? order.items 
-    : order.items.filter(item => item.category === selectedFilter);
-
+  const accentClass = getOrderAccent(order);
   const groupItemsByCategory = (items: OrderItem[]) => {
     const grouped: Record<string, OrderItem[]> = {};
     items.forEach(item => {
@@ -38,26 +41,39 @@ export function OrderCard({
     return grouped;
   };
 
-  const groupedItems = groupItemsByCategory(displayedItems);
+  const groupedItems = groupItemsByCategory(order.items);
+  const orderTime = new Intl.DateTimeFormat('el-GR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(order.timestamp));
 
   return (
-    <div className="bg-white dark:bg-gray-700 rounded-lg shadow-md border-2 border-gray-200 dark:border-gray-600 flex flex-col min-w-[260px] sm:min-w-[300px] md:min-w-[340px] max-h-[70vh]">
-      <div className="bg-gray-50 dark:bg-gray-800/50 p-3 flex items-center justify-between border-b-2 border-gray-200 dark:border-gray-600">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold px-2 py-1 rounded bg-blue-600 text-white">
+    <div
+      className={cn(
+        'kitchen-order-card bg-white dark:bg-gray-700 rounded-lg shadow-md border-2 flex flex-col min-w-[260px] sm:min-w-[300px] md:min-w-[340px] max-h-[70vh]',
+        accentClass
+      )}
+    >
+      <div className="kitchen-order-card-header p-3 flex items-center justify-between border-b-2">
+        <div className="flex items-start gap-2">
+          <span className="kitchen-order-accent-badge text-xs font-bold px-2 py-1 rounded">
             #{index + 1}
           </span>
           <div className="flex flex-col">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">
-              {order.isExtra ? 'EXTRA — ' : ''}Τραπέζι {order.tableNumber}
+            <h3 className="text-lg font-bold leading-tight">
+              Τραπέζι {order.tableNumber}
             </h3>
+            <span className="text-xs font-semibold opacity-90">
+              {order.waiterName} • {orderTime}
+            </span>
             {order.isExtra && (
-              <span className="text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 font-bold px-1.5 py-0.5 rounded w-fit uppercase">
+              <span className="kitchen-order-extra-badge text-[10px] font-bold px-1.5 py-0.5 rounded w-fit uppercase mt-1">
                 EXTRA
               </span>
             )}
             {order.extraNotes && (
-              <span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold uppercase truncate max-w-[150px]">
+              <span className="text-[10px] font-bold uppercase truncate max-w-[150px] opacity-80 mt-1">
                 Σημ: {order.extraNotes}
               </span>
             )}
@@ -77,7 +93,7 @@ export function OrderCard({
         {Object.entries(groupedItems).map(([category, items]) => (
           <div key={category}>
             <div className="text-xs font-bold text-gray-600 dark:text-gray-400 mb-1 uppercase">
-              {categoryLabels[category as OrderCategory]}
+              {CATEGORY_LABELS[category as OrderCategory] ?? category}
             </div>
             <div className="space-y-1">
               {items.map((item) => (

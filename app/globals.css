@@ -30,6 +30,20 @@
   --font-weight-normal: 400;
   --ring: #3b82f6;
   --radius: 0.625rem;
+  --kitchen-status-new: #374151;
+  --kitchen-status-new-foreground: #ffffff;
+  --kitchen-status-extra: #f97316;
+  --kitchen-status-extra-foreground: #1f2937;
+  --kitchen-status-started: #2563eb;
+  --kitchen-status-started-foreground: #ffffff;
+  --kitchen-status-completed: #16a34a;
+  --kitchen-status-completed-foreground: #ffffff;
+  --kitchen-status-delivered: #7c3aed;
+  --kitchen-status-delivered-foreground: #ffffff;
+  --kitchen-status-closed: #38bdf8;
+  --kitchen-status-closed-foreground: #0f172a;
+  --kitchen-order-accent: var(--kitchen-status-new);
+  --kitchen-order-accent-foreground: var(--kitchen-status-new-foreground);
 }
 
 .dark {
@@ -54,6 +68,20 @@
   --ring: #60a5fa;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
+  --kitchen-status-new: #4b5563;
+  --kitchen-status-new-foreground: #ffffff;
+  --kitchen-status-extra: #fb923c;
+  --kitchen-status-extra-foreground: #0f172a;
+  --kitchen-status-started: #60a5fa;
+  --kitchen-status-started-foreground: #0f172a;
+  --kitchen-status-completed: #4ade80;
+  --kitchen-status-completed-foreground: #0f172a;
+  --kitchen-status-delivered: #c4b5fd;
+  --kitchen-status-delivered-foreground: #0f172a;
+  --kitchen-status-closed: #7dd3fc;
+  --kitchen-status-closed-foreground: #0f172a;
+  --kitchen-order-accent: var(--kitchen-status-new);
+  --kitchen-order-accent-foreground: var(--kitchen-status-new-foreground);
 }
 
 @theme inline {
@@ -158,5 +186,57 @@
     font-size: var(--text-base);
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
+  }
+}
+
+@layer components {
+  .kitchen-status-new {
+    --kitchen-order-accent: var(--kitchen-status-new);
+    --kitchen-order-accent-foreground: var(--kitchen-status-new-foreground);
+  }
+
+  .kitchen-status-extra {
+    --kitchen-order-accent: var(--kitchen-status-extra);
+    --kitchen-order-accent-foreground: var(--kitchen-status-extra-foreground);
+  }
+
+  .kitchen-status-started {
+    --kitchen-order-accent: var(--kitchen-status-started);
+    --kitchen-order-accent-foreground: var(--kitchen-status-started-foreground);
+  }
+
+  .kitchen-status-completed {
+    --kitchen-order-accent: var(--kitchen-status-completed);
+    --kitchen-order-accent-foreground: var(--kitchen-status-completed-foreground);
+  }
+
+  .kitchen-status-delivered {
+    --kitchen-order-accent: var(--kitchen-status-delivered);
+    --kitchen-order-accent-foreground: var(--kitchen-status-delivered-foreground);
+  }
+
+  .kitchen-status-closed {
+    --kitchen-order-accent: var(--kitchen-status-closed);
+    --kitchen-order-accent-foreground: var(--kitchen-status-closed-foreground);
+  }
+
+  .kitchen-order-card {
+    border-color: var(--kitchen-order-accent);
+  }
+
+  .kitchen-order-card-header {
+    background-color: var(--kitchen-order-accent);
+    border-color: var(--kitchen-order-accent);
+    color: var(--kitchen-order-accent-foreground);
+  }
+
+  .kitchen-order-accent-badge {
+    background-color: var(--kitchen-order-accent);
+    color: var(--kitchen-order-accent-foreground);
+  }
+
+  .kitchen-order-extra-badge {
+    background-color: var(--kitchen-status-extra);
+    color: var(--kitchen-status-extra-foreground);
   }
 }

@@ -3,13 +3,16 @@
 import React from 'react';
 import { Button } from '@/components/ui/Button';
 import { ScrollArea } from '@/components/ui/ScrollArea';
-import { OrderCategory } from '@/types/order';
+import { cn } from '@/components/ui/utils';
+import { KitchenOrderFilterKey } from './orderStatus';
 
 interface KitchenHeaderProps {
   pendingCount: number;
-  selectedFilter: OrderCategory | 'all';
-  onFilterChange: (filter: OrderCategory | 'all') => void;
-  categoryLabels: Record<OrderCategory, string>;
+  statusFilters: Record<KitchenOrderFilterKey, boolean>;
+  filterKeys: KitchenOrderFilterKey[];
+  filterLabels: Record<KitchenOrderFilterKey, string>;
+  onFilterToggle: (filter: KitchenOrderFilterKey) => void;
+  onFilterReset: () => void;
   // View Switcher Props
   onSwitchView: (view: 'waiter' | 'kitchen' | 'admin') => void;
   ThemeToggle: React.ReactNode;
@@ -17,9 +20,11 @@ interface KitchenHeaderProps {
 
 export function KitchenHeader({
   pendingCount,
-  selectedFilter,
-  onFilterChange,
-  categoryLabels,
+  statusFilters,
+  filterKeys,
+  filterLabels,
+  onFilterToggle,
+  onFilterReset,
   onSwitchView,
   ThemeToggle,
 }: KitchenHeaderProps) {
@@ -52,37 +57,32 @@ export function KitchenHeader({
       {/* Filter Bar */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-2 px-4">
         <ScrollArea className="w-full">
-          <div className="flex gap-2 pb-1 justify-end">
-            <button
-              onClick={() => onFilterChange('all')}
-              className={`
-                px-4 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap border
-                ${selectedFilter === 'all'
-                  ? 'bg-slate-800 text-white border-slate-800 dark:bg-slate-700 dark:border-slate-700'
-                  : 'bg-white text-gray-900 border-gray-200 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 dark:hover:bg-gray-600'
-                }
-              `}
-            >
-              ΟΛA ({pendingCount})
-            </button>
-            {(Object.keys(categoryLabels) as OrderCategory[]).map((cat) => {
-              const isActive = selectedFilter === cat;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => onFilterChange(cat)}
-                  className={`
-                    px-4 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap border
-                    ${isActive
-                      ? 'bg-slate-800 text-white border-slate-800 dark:bg-slate-700 dark:border-slate-700'
-                      : 'bg-white text-gray-900 border-gray-200 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 dark:hover:bg-gray-600'
-                    }
-                  `}
-                >
-                  {categoryLabels[cat]}
-                </button>
-              );
-            })}
+          <div className="flex flex-wrap gap-2 pb-1 justify-between">
+            <div className="flex flex-wrap gap-2">
+              {filterKeys.map((key) => {
+                const isActive = statusFilters[key];
+                return (
+                  <button
+                    key={key}
+                    onClick={() => onFilterToggle(key)}
+                    className={cn(
+                      'px-3 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap border',
+                      isActive
+                        ? 'bg-slate-800 text-white border-slate-800 dark:bg-slate-700 dark:border-slate-700'
+                        : 'bg-white text-gray-900 border-gray-200 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 dark:hover:bg-gray-600'
+                    )}
+                  >
+                    {filterLabels[key]}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold text-muted-foreground">{pendingCount} παραγγελίες</span>
+              <Button variant="ghost" size="sm" onClick={onFilterReset} className="h-8 px-3">
+                Reset
+              </Button>
+            </div>
           </div>
         </ScrollArea>
       </div>
