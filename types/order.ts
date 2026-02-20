@@ -1,7 +1,14 @@
 export type OrderCategory = 'Κρύα' | 'Ζεστές' | 'Ψησταριά' | 'Μαγειρευτό' | 'Ποτά';
 
 export type ItemStatus = 'pending' | 'ready' | 'delivered';
-export type OrderStatus = 'pending' | 'completed' | 'cancelled';
+export type OrderStatus =
+  | 'new'
+  | 'started'
+  | 'completed'
+  | 'delivered'
+  | 'closed'
+  | 'pending'
+  | 'cancelled';
 export type WaiterMode = 'new' | 'view' | 'extras';
 
 export interface WaiterParams {

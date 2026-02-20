@@ -13,6 +13,8 @@ interface OrderContextType {
     updateItemStatus: (orderId: string, itemId: string) => Promise<void>;
     setItemStatus: (orderId: string, itemId: string, status: ItemStatus) => Promise<void>;
     updateItemUnitStatus: (orderId: string, unitId: string, status: ItemStatus) => Promise<void>;
+    setItemUnitStatus: (orderId: string, unitId: string, status: ItemStatus) => Promise<void>;
+    setItemUnitsStatus: (orderId: string, itemId: string, status: ItemStatus) => Promise<void>;
     refreshOrders: () => Promise<void>;
     menuItems: MenuItem[];
     addMenuItem: (item: Omit<MenuItem, 'id'>) => Promise<void>;
@@ -143,17 +145,34 @@ export function OrderProvider({children}: { children: ReactNode }) {
         const statuses: ItemStatus[] = ['pending', 'ready', 'delivered'];
         const currentIndex = statuses.indexOf(status || 'pending');
         const nextStatus = statuses[(currentIndex + 1) % statuses.length];
+        await setItemUnitStatus(orderId, unitId, nextStatus);
+    };
 
+    const setItemUnitStatus = async (orderId: string, unitId: string, status: ItemStatus) => {
         try {
             const response = await fetch(`/api/orders/${orderId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ unitId, unitStatus: nextStatus }),
+                body: JSON.stringify({ unitId, unitStatus: status }),
             });
             if (!response.ok) throw new Error('Failed to update item unit status');
             await fetchOrders();
         } catch (error) {
             console.error('Error updating item unit status:', error);
+        }
+    };
+
+    const setItemUnitsStatus = async (orderId: string, itemId: string, status: ItemStatus) => {
+        try {
+            const response = await fetch(`/api/orders/${orderId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ itemId, unitStatus: status, mode: 'bulk' }),
+            });
+            if (!response.ok) throw new Error('Failed to update item units status');
+            await fetchOrders();
+        } catch (error) {
+            console.error('Error updating item units status:', error);
         }
     };
 
@@ -207,6 +226,8 @@ export function OrderProvider({children}: { children: ReactNode }) {
             updateItemStatus,
             setItemStatus,
             updateItemUnitStatus,
+            setItemUnitStatus,
+            setItemUnitsStatus,
             refreshOrders: fetchOrders,
             setOrderStatus,
             menuItems,

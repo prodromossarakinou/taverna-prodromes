@@ -7,9 +7,14 @@ import { cn } from '@/components/ui/utils';
 interface OrderItemRowProps {
   item: OrderItem;
   isExpanded: boolean;
+  isEditing: boolean;
   onToggleExpand: () => void;
   onCycleStatus: () => void;
   onUnitClick: (unit: OrderItemUnit, status: ItemStatus) => void;
+  onUnitStatusChange?: (unit: OrderItemUnit, status: ItemStatus) => void;
+  onItemStatusChange?: (status: ItemStatus) => void;
+  unitStatusOverrides?: Record<string, ItemStatus>;
+  itemStatusOverride?: ItemStatus;
 }
 
 const ITEM_STATUSES: ItemStatus[] = ['pending', 'ready', 'delivered'];
@@ -23,11 +28,16 @@ const STATUS_LABELS: Record<ItemStatus, string> = {
 export function OrderItemRow({
   item,
   isExpanded,
+  isEditing,
   onToggleExpand,
   onCycleStatus,
   onUnitClick,
+  onUnitStatusChange,
+  onItemStatusChange,
+  unitStatusOverrides,
+  itemStatusOverride,
 }: OrderItemRowProps) {
-  const status = item.itemStatus ?? 'pending';
+  const fallbackStatus = itemStatusOverride ?? item.itemStatus ?? 'pending';
   
   const statusStyles = {
     pending: 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400',
@@ -35,13 +45,18 @@ export function OrderItemRow({
     delivered: 'bg-green-500 text-white border-transparent',
   };
 
-  const units = item.units ?? Array.from({ length: item.quantity }, (_value, index) => ({
-    id: `${item.id}-unit-${index}`,
-    status: status,
-    unitIndex: index,
-  }));
-  const unitStatuses = units.map(unit => unit.status);
-  const mixedStatus = item.quantity > 1 && new Set(unitStatuses).size > 1;
+  const units = item.units && item.units.length > 0
+    ? item.units
+    : Array.from({ length: item.quantity }, (_value, index) => ({
+        id: `${item.id}-unit-${index}`,
+        status: fallbackStatus,
+        unitIndex: index,
+      }));
+  const unitStatuses = units.map(unit => unitStatusOverrides?.[unit.id] ?? unit.status);
+  const uniqueStatuses = new Set(unitStatuses);
+  const isUnified = item.quantity > 1 && uniqueStatuses.size === 1;
+  const mixedStatus = item.quantity > 1 && uniqueStatuses.size > 1;
+  const status = isUnified ? unitStatuses[0] : fallbackStatus;
 
   const handleItemClick = () => {
     if (item.quantity > 1) {
@@ -84,10 +99,26 @@ export function OrderItemRow({
           )}
         </div>
       </button>
+      {isEditing && onItemStatusChange && (
+        <div className="flex items-center justify-end gap-2">
+          <span className="text-[10px] font-semibold text-muted-foreground">Item status</span>
+          <select
+            value={status}
+            onChange={(event) => onItemStatusChange(event.target.value as ItemStatus)}
+            className="h-7 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 text-[10px] font-semibold"
+          >
+            {ITEM_STATUSES.map(option => (
+              <option key={option} value={option}>
+                {STATUS_LABELS[option]}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       {isExpanded && item.quantity > 1 && (
         <div className="space-y-1">
           {units.map((unit) => {
-            const unitStatus = unit.status;
+            const unitStatus = unitStatusOverrides?.[unit.id] ?? unit.status;
             return (
               <div key={unit.id} className="flex items-center justify-between gap-3">
                 <button
@@ -101,6 +132,19 @@ export function OrderItemRow({
                     {item.name} ×1
                   </span>
                 </button>
+                {isEditing && onUnitStatusChange && (
+                  <select
+                    value={unitStatus}
+                    onChange={(event) => onUnitStatusChange(unit, event.target.value as ItemStatus)}
+                    className="h-7 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 text-[10px] font-semibold"
+                  >
+                    {ITEM_STATUSES.map(option => (
+                      <option key={option} value={option}>
+                        {STATUS_LABELS[option]}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             );
           })}

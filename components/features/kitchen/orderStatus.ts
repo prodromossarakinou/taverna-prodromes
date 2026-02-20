@@ -43,13 +43,16 @@ export const KITCHEN_FILTER_KEYS: KitchenOrderFilterKey[] = [
   'closed',
 ];
 
-export function resolveOrderStatus(order: Order): KitchenOrderFilterKey {
-  if (order.isExtra) return 'extra';
-  const status = order.status as string | undefined;
+export function normalizeOrderStatus(status?: string | null): KitchenOrderStatus {
   if (status && KITCHEN_ORDER_STATUSES.includes(status as KitchenOrderStatus)) {
     return status as KitchenOrderStatus;
   }
   return status && LEGACY_STATUS_MAP[status] ? LEGACY_STATUS_MAP[status] : 'new';
+}
+
+export function resolveOrderStatus(order: Order): KitchenOrderFilterKey {
+  if (order.isExtra) return 'extra';
+  return normalizeOrderStatus(order.status);
 }
 
 export function getOrderAccent(order: Order): string {

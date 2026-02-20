@@ -36,6 +36,8 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
     updateItemStatus,
     updateItemUnitStatus,
     setItemStatus,
+    setItemUnitStatus,
+    setOrderStatus,
     refreshOrders,
   } = useOrders();
   const [statusFilters, setStatusFilters] = useState<Record<KitchenOrderFilterKey, boolean>>({
@@ -222,6 +224,8 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
                 onItemStatusCycle={handleItemClick}
                 onUnitStatusCycle={updateItemUnitStatus}
                 onSetItemStatus={setItemStatus}
+                onSetUnitStatus={setItemUnitStatus}
+                onSetOrderStatus={setOrderStatus}
               />
             ))}
           </div>
