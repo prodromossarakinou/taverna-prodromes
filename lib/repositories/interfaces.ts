@@ -2,6 +2,9 @@ import { MenuItem, Order, OrderStatus, ItemStatus } from '@/types/order';
 
 export interface IMenuRepository {
   getMenuItems(): Promise<MenuItem[]>;
+  createMenuItem(item: Omit<MenuItem, 'id'>): Promise<MenuItem>;
+  updateMenuItem(id: string, item: Omit<MenuItem, 'id'>): Promise<MenuItem>;
+  deleteMenuItem(id: string): Promise<void>;
 }
 
 export interface IOrderRepository {

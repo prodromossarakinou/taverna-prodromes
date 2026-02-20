@@ -23,6 +23,8 @@ model Order {
   timestamp   DateTime    @default(now())
   status      String      @default("pending")
   extraNotes  String?
+  isExtra     Boolean     @default(false)
+  parentId    String?
   items       OrderItem[]
 }
 

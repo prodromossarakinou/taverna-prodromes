@@ -10,6 +10,45 @@ export class PrismaMenuRepository implements IMenuRepository {
       category: item.category as OrderCategory,
     }));
   }
+
+  async createMenuItem(item: Omit<MenuItem, 'id'>): Promise<MenuItem> {
+    const created = await prisma.menuItem.create({
+      data: {
+        name: item.name,
+        category: item.category,
+        price: item.price ?? null,
+        extraNotes: item.extraNotes ?? null,
+        active: item.active ?? true,
+      },
+    });
+
+    return {
+      ...created,
+      category: created.category as OrderCategory,
+    };
+  }
+
+  async updateMenuItem(id: string, item: Omit<MenuItem, 'id'>): Promise<MenuItem> {
+    const updated = await prisma.menuItem.update({
+      where: { id },
+      data: {
+        name: item.name,
+        category: item.category,
+        price: item.price ?? null,
+        extraNotes: item.extraNotes ?? null,
+        active: item.active ?? true,
+      },
+    });
+
+    return {
+      ...updated,
+      category: updated.category as OrderCategory,
+    };
+  }
+
+  async deleteMenuItem(id: string): Promise<void> {
+    await prisma.menuItem.delete({ where: { id } });
+  }
 }
 
 export class PrismaOrderRepository implements IOrderRepository {
@@ -27,6 +66,8 @@ export class PrismaOrderRepository implements IOrderRepository {
       ...order,
       timestamp: order.timestamp.getTime(),
       status: order.status as OrderStatus,
+      isExtra: order.isExtra,
+      parentId: order.parentId ?? undefined,
       items: order.items.map(item => ({
         ...item,
         category: item.category as OrderCategory,
@@ -42,6 +83,8 @@ export class PrismaOrderRepository implements IOrderRepository {
         waiterName: orderData.waiterName,
         status: 'pending',
         extraNotes: orderData.extraNotes,
+        isExtra: orderData.isExtra ?? false,
+        parentId: orderData.parentId ?? null,
         items: {
           create: orderData.items.map(item => ({
             name: item.name,
@@ -61,6 +104,8 @@ export class PrismaOrderRepository implements IOrderRepository {
       ...order,
       timestamp: order.timestamp.getTime(),
       status: order.status as OrderStatus,
+      isExtra: order.isExtra,
+      parentId: order.parentId ?? undefined,
       items: order.items.map(item => ({
         ...item,
         category: item.category as OrderCategory,
@@ -80,6 +125,8 @@ export class PrismaOrderRepository implements IOrderRepository {
       ...order,
       timestamp: order.timestamp.getTime(),
       status: order.status as OrderStatus,
+      isExtra: order.isExtra,
+      parentId: order.parentId ?? undefined,
       items: order.items.map(item => ({
         ...item,
         category: item.category as OrderCategory,
@@ -105,6 +152,8 @@ export class PrismaOrderRepository implements IOrderRepository {
       ...order,
       timestamp: order.timestamp.getTime(),
       status: order.status as OrderStatus,
+      isExtra: order.isExtra,
+      parentId: order.parentId ?? undefined,
       items: order.items.map(item => ({
         ...item,
         category: item.category as OrderCategory,

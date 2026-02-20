@@ -24,6 +24,8 @@ export async function POST(request: Request) {
       tableNumber: body.tableNumber,
       waiterName: body.waiterName || 'Σερβιτόρος',
       extraNotes: body.extraNotes,
+      isExtra: body.isExtra ?? false,
+      parentId: body.parentId ?? undefined,
       items: body.items,
     });
 

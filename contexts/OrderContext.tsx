@@ -1,125 +1,149 @@
 'use client';
 
-import React, {createContext, useContext, useState, ReactNode} from 'react';
-import {Order, OrderItem, ItemStatus, MenuItem} from '../types/order';
+import React, {createContext, useContext, useState, ReactNode, useCallback, useEffect} from 'react';
+import {Order, ItemStatus, MenuItem} from '../types/order';
 
 interface OrderContextType {
     orders: Order[];
-    addOrder: (order: Omit<Order, 'id' | 'timestamp' | 'status'>) => void;
-    updateOrder: (orderId: string, updates: Partial<Order>) => void;
-    completeOrder: (orderId: string) => void;
-    deleteOrder: (orderId: string) => void;
-    updateItemStatus: (orderId: string, itemId: string) => void;
+    addOrder: (order: Omit<Order, 'id' | 'timestamp' | 'status'>) => Promise<void>;
+    updateOrder: (orderId: string, updates: Partial<Order>) => Promise<void>;
+    completeOrder: (orderId: string) => Promise<void>;
+    deleteOrder: (orderId: string) => Promise<void>;
+    updateItemStatus: (orderId: string, itemId: string) => Promise<void>;
     menuItems: MenuItem[];
-    addMenuItem: (item: Omit<MenuItem, 'id'>) => void;
-    updateMenuItem: (id: string, item: Omit<MenuItem, 'id'>) => void;
-    deleteMenuItem: (id: string) => void;
+    addMenuItem: (item: Omit<MenuItem, 'id'>) => Promise<void>;
+    updateMenuItem: (id: string, item: Omit<MenuItem, 'id'>) => Promise<void>;
+    deleteMenuItem: (id: string) => Promise<void>;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
-const DUMMY_ORDERS: Order[] = [];
-const DUMMY_MENU_ITEMS: MenuItem[] = [
-    { id: '1', name: 'Χωριάτικη Σαλάτα', category: 'Κρύα', price: 6.5, active: true },
-    { id: '2', name: 'Πράσινη Σαλάτα', category: 'Κρύα', price: 5.5, active: true },
-    { id: '3', name: 'Ρόκα με Παρμεζάνα', category: 'Κρύα', price: 7.2, active: true },
-    { id: '4', name: 'Καίσαρ', category: 'Κρύα', price: 7.8, active: true },
-    { id: '5', name: 'Ντοματοσαλάτα', category: 'Κρύα', price: 4.8, active: true },
-    { id: '6', name: 'Ζεστή Σαλάτα με Κοτόπουλο', category: 'Ζεστές', price: 8.4, active: true },
-    { id: '7', name: 'Σαλάτα με Γαρίδες', category: 'Ζεστές', price: 9.9, active: true },
-    { id: '8', name: 'Μπριζόλα Χοιρινή', category: 'Ψησταριά', price: 10.5, active: true },
-    { id: '9', name: 'Μπριζόλα Μοσχαρίσια', category: 'Ψησταριά', price: 13.5, active: true },
-    { id: '10', name: 'Κοτόπουλο Φιλέτο', category: 'Ψησταριά', price: 9.2, active: true },
-    { id: '11', name: 'Μπιφτέκι', category: 'Ψησταριά', price: 7.9, active: true },
-    { id: '12', name: 'Σουβλάκι Χοιρινό', category: 'Ψησταριά', price: 6.4, active: true },
-    { id: '13', name: 'Σουβλάκι Κοτόπουλο', category: 'Ψησταριά', price: 6.8, active: true },
-    { id: '14', name: 'Μουσακάς', category: 'Μαγειρευτό', price: 9.5, active: true },
-    { id: '15', name: 'Παστίτσιο', category: 'Μαγειρευτό', price: 9.2, active: true },
-    { id: '16', name: 'Παπουτσάκια', category: 'Μαγειρευτό', price: 8.7, active: true },
-    { id: '17', name: 'Γιουβέτσι', category: 'Μαγειρευτό', price: 10.2, active: true },
-    { id: '18', name: 'Κοκκινιστό', category: 'Μαγειρευτό', price: 10.6, active: true },
-    { id: '19', name: 'Κόκα Κόλα', category: 'Ποτά', price: 2.2, active: true },
-    { id: '20', name: 'Σπράιτ', category: 'Ποτά', price: 2.2, active: true },
-    { id: '21', name: 'Φάντα', category: 'Ποτά', price: 2.2, active: true },
-    { id: '22', name: 'Νερό', category: 'Ποτά', price: 1.5, active: true },
-    { id: '23', name: 'Μπύρα', category: 'Ποτά', price: 3.5, active: true },
-    { id: '24', name: 'Κρασί Λευκό', category: 'Ποτά', price: 4.5, active: true },
-    { id: '25', name: 'Κρασί Κόκκινο', category: 'Ποτά', price: 4.8, active: true },
-    { id: '26', name: 'Καφές', category: 'Ποτά', price: 2.0, active: true },
-];
-
 export function OrderProvider({children}: { children: ReactNode }) {
-    const [orders, setOrders] = useState<Order[]>(DUMMY_ORDERS);
-    const [menuItems, setMenuItems] = useState<MenuItem[]>(DUMMY_MENU_ITEMS);
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
 
-    const addOrder = (orderData: Omit<Order, 'id' | 'timestamp' | 'status'>) => {
-        const newOrder: Order = {
-            ...orderData,
-            id: `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            timestamp: Date.now(),
-            status: 'pending',
-            isExtra: (orderData as any).isExtra || false,
-            parentId: (orderData as any).parentId,
-        };
-        setOrders(prev => [...prev, newOrder]);
+    const fetchOrders = useCallback(async () => {
+        try {
+            const response = await fetch('/api/orders');
+            if (!response.ok) throw new Error('Failed to fetch orders');
+            const data = await response.json();
+            setOrders(data);
+        } catch (error) {
+            console.error('Error fetching orders:', error);
+        }
+    }, []);
+
+    const fetchMenuItems = useCallback(async () => {
+        try {
+            const response = await fetch('/api/menu');
+            if (!response.ok) throw new Error('Failed to fetch menu');
+            const data = await response.json();
+            setMenuItems(data);
+        } catch (error) {
+            console.error('Error fetching menu items:', error);
+        }
+    }, []);
+
+    useEffect(() => {
+        void fetchOrders();
+        void fetchMenuItems();
+    }, [fetchOrders, fetchMenuItems]);
+
+    const addOrder = async (orderData: Omit<Order, 'id' | 'timestamp' | 'status'>) => {
+        try {
+            const response = await fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orderData),
+            });
+            if (!response.ok) throw new Error('Failed to create order');
+            await fetchOrders();
+        } catch (error) {
+            console.error('Error creating order:', error);
+        }
     };
 
-    const updateOrder = (orderId: string, updates: Partial<Order>) => {
-        setOrders(prev =>
-            prev.map(order =>
-                order.id === orderId ? { ...order, ...updates } : order
-            )
-        );
+    const updateOrder = async (orderId: string, updates: Partial<Order>) => {
+        try {
+            if (!updates.status) return;
+            const response = await fetch(`/api/orders/${orderId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: updates.status }),
+            });
+            if (!response.ok) throw new Error('Failed to update order');
+            await fetchOrders();
+        } catch (error) {
+            console.error('Error updating order:', error);
+        }
     };
 
-    const completeOrder = (orderId: string) => {
-        setOrders(prev =>
-            prev.map(order =>
-                order.id === orderId ? {...order, status: 'completed'} : order
-            )
-        );
+    const completeOrder = async (orderId: string) => {
+        await updateOrder(orderId, { status: 'completed' });
     };
 
-    const deleteOrder = (orderId: string) => {
-        setOrders(prev => prev.filter(order => order.id !== orderId));
+    const deleteOrder = async (orderId: string) => {
+        await updateOrder(orderId, { status: 'cancelled' });
     };
 
-    const updateItemStatus = (orderId: string, itemId: string) => {
-        setOrders(prev =>
-            prev.map(order => {
-                if (order.id !== orderId) return order;
-                return {
-                    ...order,
-                    items: order.items.map(item => {
-                        if (item.id !== itemId) return item;
+    const updateItemStatus = async (orderId: string, itemId: string) => {
+        const order = orders.find(currentOrder => currentOrder.id === orderId);
+        const item = order?.items.find(orderItem => orderItem.id === itemId);
+        const statuses: ItemStatus[] = ['pending', 'ready', 'delivered'];
+        const currentIndex = statuses.indexOf(item?.itemStatus || 'pending');
+        const nextStatus = statuses[(currentIndex + 1) % statuses.length];
 
-                        const statuses: ItemStatus[] = ['pending', 'ready', 'delivered'];
-                        const currentIndex = statuses.indexOf(item.itemStatus || 'pending');
-                        const nextStatus = statuses[(currentIndex + 1) % statuses.length];
-
-                        return {...item, itemStatus: nextStatus};
-                    }),
-                };
-            })
-        );
+        try {
+            const response = await fetch(`/api/orders/${orderId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ itemId, itemStatus: nextStatus }),
+            });
+            if (!response.ok) throw new Error('Failed to update item status');
+            await fetchOrders();
+        } catch (error) {
+            console.error('Error updating item status:', error);
+        }
     };
 
-    const addMenuItem = (item: Omit<MenuItem, 'id'>) => {
-        const newItem: MenuItem = {
-            ...item,
-            id: `menu-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        };
-        setMenuItems(prev => [...prev, newItem]);
+    const addMenuItem = async (item: Omit<MenuItem, 'id'>) => {
+        try {
+            const response = await fetch('/api/menu', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(item),
+            });
+            if (!response.ok) throw new Error('Failed to create menu item');
+            await fetchMenuItems();
+        } catch (error) {
+            console.error('Error creating menu item:', error);
+        }
     };
 
-    const updateMenuItem = (id: string, item: Omit<MenuItem, 'id'>) => {
-        setMenuItems(prev =>
-            prev.map(menuItem => (menuItem.id === id ? { ...menuItem, ...item } : menuItem))
-        );
+    const updateMenuItem = async (id: string, item: Omit<MenuItem, 'id'>) => {
+        try {
+            const response = await fetch(`/api/menu/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(item),
+            });
+            if (!response.ok) throw new Error('Failed to update menu item');
+            await fetchMenuItems();
+        } catch (error) {
+            console.error('Error updating menu item:', error);
+        }
     };
 
-    const deleteMenuItem = (id: string) => {
-        setMenuItems(prev => prev.filter(menuItem => menuItem.id !== id));
+    const deleteMenuItem = async (id: string) => {
+        try {
+            const response = await fetch(`/api/menu/${id}`, {
+                method: 'DELETE',
+            });
+            if (!response.ok) throw new Error('Failed to delete menu item');
+            await fetchMenuItems();
+        } catch (error) {
+            console.error('Error deleting menu item:', error);
+        }
     };
 
     return (
