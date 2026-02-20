@@ -37,4 +37,15 @@ model OrderItem {
   extraNotes String?
   orderId    String
   order      Order   @relation(fields: [orderId], references: [id])
+  units      OrderItemUnit[]
+}
+
+model OrderItemUnit {
+  id          String    @id @default(cuid())
+  orderItemId String
+  status      String    @default("pending")
+  unitIndex   Int
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
+
+  @@index([orderItemId])
 }
