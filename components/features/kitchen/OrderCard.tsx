@@ -41,7 +41,7 @@ export function OrderCard({
   const groupedItems = groupItemsByCategory(displayedItems);
 
   return (
-    <div className="bg-white dark:bg-gray-700 rounded-lg shadow-md border-2 border-gray-200 dark:border-gray-600">
+    <div className="bg-white dark:bg-gray-700 rounded-lg shadow-md border-2 border-gray-200 dark:border-gray-600 flex flex-col min-w-[260px] sm:min-w-[300px] md:min-w-[340px] max-h-[70vh]">
       <div className="bg-gray-50 dark:bg-gray-800/50 p-3 flex items-center justify-between border-b-2 border-gray-200 dark:border-gray-600">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold px-2 py-1 rounded bg-blue-600 text-white">
@@ -73,7 +73,7 @@ export function OrderCard({
         </Button>
       </div>
 
-      <div className="p-3 space-y-3">
+      <div className="p-3 space-y-3 overflow-y-auto">
         {Object.entries(groupedItems).map(([category, items]) => (
           <div key={category}>
             <div className="text-xs font-bold text-gray-600 dark:text-gray-400 mb-1 uppercase">

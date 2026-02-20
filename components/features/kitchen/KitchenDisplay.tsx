@@ -25,17 +25,26 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
   const [selectedFilter, setSelectedFilter] = useState<OrderCategory | 'all'>('all');
   const [pendingUpdates, setPendingUpdates] = useState(0);
   const [isApplyingUpdates, setIsApplyingUpdates] = useState(false);
-  const lastSeenOrdersRef = useRef(orders);
+  const mappedOrders = useMemo(
+    () =>
+      orders.map(order => ({
+        ...order,
+        orderStatus: order.status,
+        createdAt: order.timestamp,
+      })),
+    [orders]
+  );
+  const lastSeenOrdersRef = useRef(mappedOrders);
 
-  const buildOrderSignature = (order: typeof orders[number]) => {
+  const buildOrderSignature = (order: typeof mappedOrders[number]) => {
     const itemsSignature = [...order.items]
       .sort((a, b) => a.id.localeCompare(b.id))
       .map(item => `${item.id}:${item.itemStatus}:${item.quantity}:${item.extraNotes ?? ''}`)
       .join('|');
-    return `${order.status}:${order.timestamp}:${itemsSignature}`;
+    return `${order.orderStatus}:${order.createdAt}:${itemsSignature}`;
   };
 
-  const countOrderUpdates = (nextOrders: typeof orders, baseOrders: typeof orders) => {
+  const countOrderUpdates = (nextOrders: typeof mappedOrders, baseOrders: typeof mappedOrders) => {
     const baseMap = new Map(baseOrders.map(order => [order.id, buildOrderSignature(order)]));
     const nextMap = new Map(nextOrders.map(order => [order.id, buildOrderSignature(order)]));
     let updates = 0;
@@ -61,7 +70,12 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
       const response = await fetch('/api/orders');
       if (!response.ok) return;
       const data = await response.json();
-      const updates = countOrderUpdates(data, lastSeenOrdersRef.current);
+      const mappedData = (data as typeof orders).map(order => ({
+        ...order,
+        orderStatus: order.status,
+        createdAt: order.timestamp,
+      }));
+      const updates = countOrderUpdates(mappedData, lastSeenOrdersRef.current);
       setPendingUpdates(prev => (updates > 0 ? updates : prev));
     } catch (error) {
       console.error('Error checking order updates:', error);
@@ -86,17 +100,17 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
   }, [refreshOrders]);
 
   useEffect(() => {
-    lastSeenOrdersRef.current = orders;
+    lastSeenOrdersRef.current = mappedOrders;
     if (pendingUpdates > 0) {
       setPendingUpdates(0);
     }
-  }, [orders]);
+  }, [mappedOrders]);
 
   const pendingOrders = useMemo(() => {
-    return orders
-      .filter(order => order.status === 'pending')
-      .sort((a, b) => a.timestamp - b.timestamp);
-  }, [orders]);
+    return mappedOrders
+      .filter(order => order.orderStatus === 'pending')
+      .sort((a, b) => a.createdAt - b.createdAt);
+  }, [mappedOrders]);
 
   const filteredOrders = useMemo(() => {
     if (selectedFilter === 'all') {
@@ -130,7 +144,7 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
             <p className="text-xl text-muted-foreground">Δεν υπάρχουν εκκρεμείς παραγγελίες</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div className="flex flex-nowrap gap-3 overflow-x-auto pb-4">
             {filteredOrders.map((order, index) => (
               <OrderCard
                 key={order.id}
