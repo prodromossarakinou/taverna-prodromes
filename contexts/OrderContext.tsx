@@ -10,6 +10,7 @@ interface OrderContextType {
     completeOrder: (orderId: string) => Promise<void>;
     deleteOrder: (orderId: string) => Promise<void>;
     updateItemStatus: (orderId: string, itemId: string) => Promise<void>;
+    refreshOrders: () => Promise<void>;
     menuItems: MenuItem[];
     addMenuItem: (item: Omit<MenuItem, 'id'>) => Promise<void>;
     updateMenuItem: (id: string, item: Omit<MenuItem, 'id'>) => Promise<void>;
@@ -27,7 +28,29 @@ export function OrderProvider({children}: { children: ReactNode }) {
             const response = await fetch('/api/orders');
             if (!response.ok) throw new Error('Failed to fetch orders');
             const data = await response.json();
-            setOrders(data);
+            const uniqueOrders = Array.from(
+                new Map((data as Order[]).map(order => [order.id, order])).values()
+            );
+            setOrders(prev => {
+                if (prev.length === uniqueOrders.length) {
+                    const isSame = prev.every((order, index) => {
+                        const nextOrder = uniqueOrders[index];
+                        if (!nextOrder) return false;
+                        if (order.id !== nextOrder.id) return false;
+                        if (order.timestamp !== nextOrder.timestamp) return false;
+                        if (order.status !== nextOrder.status) return false;
+                        if (order.items.length !== nextOrder.items.length) return false;
+                        return order.items.every((item, itemIndex) => {
+                            const nextItem = nextOrder.items[itemIndex];
+                            return nextItem
+                                ? item.id === nextItem.id && item.itemStatus === nextItem.itemStatus
+                                : false;
+                        });
+                    });
+                    if (isSame) return prev;
+                }
+                return uniqueOrders;
+            });
         } catch (error) {
             console.error('Error fetching orders:', error);
         }
@@ -154,6 +177,7 @@ export function OrderProvider({children}: { children: ReactNode }) {
             completeOrder,
             deleteOrder,
             updateItemStatus,
+            refreshOrders: fetchOrders,
             menuItems,
             addMenuItem,
             updateMenuItem,

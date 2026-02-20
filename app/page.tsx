@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { WaiterView } from '@/components/features/waiter/WaiterView';
 import { KitchenDisplay } from '@/components/features/kitchen/KitchenDisplay';
 import { AdminView } from '@/components/features/admin/AdminView';
@@ -11,6 +12,8 @@ import { useOrders } from '@/contexts/OrderContext';
 import { WaiterParams, WaiterMode } from '@/types/order';
 
 export default function Home() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [view, setView] = useState<'waiter' | 'kitchen' | 'admin'>('waiter');
   const { orders } = useOrders();
 
@@ -26,6 +29,20 @@ export default function Home() {
     setOrderPickFor(null);
   };
 
+  useEffect(() => {
+    const initialView = searchParams.get('view');
+    if (initialView === 'kitchen' || initialView === 'admin' || initialView === 'waiter') {
+      setView(initialView);
+    }
+  }, [searchParams]);
+
+  const setViewAndPersist = (nextView: 'waiter' | 'kitchen' | 'admin') => {
+    setView(nextView);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('view', nextView);
+    router.replace(`/?${params.toString()}`);
+  };
+
   return (
     <main className="min-h-screen">
       {/* Main View Content */}
@@ -33,7 +50,7 @@ export default function Home() {
         <WaiterView 
           params={waiterParams}
           onBack={() => setWaiterParams({ mode: 'new' })}
-          onSwitchView={setView}
+          onSwitchView={setViewAndPersist}
           onStartNew={startNew}
           onRequestPick={requestPick}
           onOpenMobileMenu={() => setModePopupOpen(true)}
@@ -41,11 +58,11 @@ export default function Home() {
         />
       ) : view === 'kitchen' ? (
         <KitchenDisplay 
-          onSwitchView={setView}
+          onSwitchView={setViewAndPersist}
           ThemeToggle={<ThemeToggle />}
         />
       ) : (
-        <AdminView onSwitchView={setView} ThemeToggle={<ThemeToggle />} />
+        <AdminView onSwitchView={setViewAndPersist} ThemeToggle={<ThemeToggle />} />
       )}
 
       {/* Mobile Mode Selector Popup */}
@@ -55,9 +72,9 @@ export default function Home() {
           <Button size="lg" variant="outline" onClick={() => { setModePopupOpen(false); requestPick('view'); }}>Προβολή Παραγγελίας</Button>
           <Button size="lg" variant="outline" onClick={() => { setModePopupOpen(false); requestPick('extras'); }}>Extras σε Παραγγελία</Button>
           <div className="h-px bg-border my-2" />
-          <Button size="lg" variant={view === 'kitchen' ? 'default' : 'outline'} onClick={() => { setView('kitchen'); setModePopupOpen(false); }}>Kitchen View</Button>
-          <Button size="lg" variant={view === 'waiter' ? 'default' : 'outline'} onClick={() => { setView('waiter'); setModePopupOpen(false); }}>Waiter View</Button>
-          <Button size="lg" variant={view === 'admin' ? 'default' : 'outline'} onClick={() => { setView('admin'); setModePopupOpen(false); }}>Admin View</Button>
+          <Button size="lg" variant={view === 'kitchen' ? 'default' : 'outline'} onClick={() => { setViewAndPersist('kitchen'); setModePopupOpen(false); }}>Kitchen View</Button>
+          <Button size="lg" variant={view === 'waiter' ? 'default' : 'outline'} onClick={() => { setViewAndPersist('waiter'); setModePopupOpen(false); }}>Waiter View</Button>
+          <Button size="lg" variant={view === 'admin' ? 'default' : 'outline'} onClick={() => { setViewAndPersist('admin'); setModePopupOpen(false); }}>Admin View</Button>
         </div>
       </Popup>
 

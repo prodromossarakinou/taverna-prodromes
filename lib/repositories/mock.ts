@@ -9,7 +9,12 @@ let mockOrders: Order[] = [];
 
 export class MockOrderRepository implements IOrderRepository {
   async getOrders(): Promise<Order[]> {
-    return [...mockOrders].sort((a, b) => b.timestamp - a.timestamp);
+    return [...mockOrders].sort((a, b) => {
+      if (a.timestamp !== b.timestamp) {
+        return a.timestamp - b.timestamp;
+      }
+      return a.id.localeCompare(b.id);
+    });
   }
 
   async createOrder(orderData: Omit<Order, 'id' | 'timestamp' | 'status'>): Promise<Order> {

@@ -1,11 +1,11 @@
 # Sprint — Live Data and Realtime Kitchen
 
-Logging status: IN PROGRESS
+Logging status: COMPLETE
 Sprint summary log: logs.md
 
 Sprint Name: live-data-and-realtime-kitchen  
 Sprint Owner: Michael  
-Status: OPEN
+Status: CLOSED
 
 ## Sprint Goal
 

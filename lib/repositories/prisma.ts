@@ -57,9 +57,10 @@ export class PrismaOrderRepository implements IOrderRepository {
       include: {
         items: true,
       },
-      orderBy: {
-        timestamp: 'desc',
-      },
+      orderBy: [
+        { timestamp: 'asc' },
+        { id: 'asc' },
+      ],
     });
 
     return orders.map(order => ({
