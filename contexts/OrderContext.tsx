@@ -1,15 +1,18 @@
 'use client';
 
 import React, {createContext, useContext, useState, ReactNode, useCallback, useEffect} from 'react';
-import {Order, ItemStatus, MenuItem} from '../types/order';
+import {Order, ItemStatus, MenuItem, OrderStatus} from '../types/order';
 
 interface OrderContextType {
     orders: Order[];
     addOrder: (order: Omit<Order, 'id' | 'timestamp' | 'status'>) => Promise<void>;
     updateOrder: (orderId: string, updates: Partial<Order>) => Promise<void>;
+    setOrderStatus: (orderId: string, status: OrderStatus) => Promise<void>;
     completeOrder: (orderId: string) => Promise<void>;
     deleteOrder: (orderId: string) => Promise<void>;
     updateItemStatus: (orderId: string, itemId: string) => Promise<void>;
+    setItemStatus: (orderId: string, itemId: string, status: ItemStatus) => Promise<void>;
+    updateItemUnitStatus: (orderId: string, unitId: string, status: ItemStatus) => Promise<void>;
     refreshOrders: () => Promise<void>;
     menuItems: MenuItem[];
     addMenuItem: (item: Omit<MenuItem, 'id'>) => Promise<void>;
@@ -87,12 +90,16 @@ export function OrderProvider({children}: { children: ReactNode }) {
     };
 
     const updateOrder = async (orderId: string, updates: Partial<Order>) => {
+        if (!updates.status) return;
+        await setOrderStatus(orderId, updates.status);
+    };
+
+    const setOrderStatus = async (orderId: string, status: OrderStatus) => {
         try {
-            if (!updates.status) return;
             const response = await fetch(`/api/orders/${orderId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: updates.status }),
+                body: JSON.stringify({ orderStatus: status }),
             });
             if (!response.ok) throw new Error('Failed to update order');
             await fetchOrders();
@@ -115,17 +122,38 @@ export function OrderProvider({children}: { children: ReactNode }) {
         const statuses: ItemStatus[] = ['pending', 'ready', 'delivered'];
         const currentIndex = statuses.indexOf(item?.itemStatus || 'pending');
         const nextStatus = statuses[(currentIndex + 1) % statuses.length];
+        await setItemStatus(orderId, itemId, nextStatus);
+    };
 
+    const setItemStatus = async (orderId: string, itemId: string, status: ItemStatus) => {
         try {
             const response = await fetch(`/api/orders/${orderId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ itemId, itemStatus: nextStatus }),
+                body: JSON.stringify({ itemId, itemStatus: status }),
             });
             if (!response.ok) throw new Error('Failed to update item status');
             await fetchOrders();
         } catch (error) {
             console.error('Error updating item status:', error);
+        }
+    };
+
+    const updateItemUnitStatus = async (orderId: string, unitId: string, status: ItemStatus) => {
+        const statuses: ItemStatus[] = ['pending', 'ready', 'delivered'];
+        const currentIndex = statuses.indexOf(status || 'pending');
+        const nextStatus = statuses[(currentIndex + 1) % statuses.length];
+
+        try {
+            const response = await fetch(`/api/orders/${orderId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ unitId, unitStatus: nextStatus }),
+            });
+            if (!response.ok) throw new Error('Failed to update item unit status');
+            await fetchOrders();
+        } catch (error) {
+            console.error('Error updating item unit status:', error);
         }
     };
 
@@ -177,7 +205,10 @@ export function OrderProvider({children}: { children: ReactNode }) {
             completeOrder,
             deleteOrder,
             updateItemStatus,
+            setItemStatus,
+            updateItemUnitStatus,
             refreshOrders: fetchOrders,
+            setOrderStatus,
             menuItems,
             addMenuItem,
             updateMenuItem,

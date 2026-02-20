@@ -1,15 +1,33 @@
 'use client';
 
 import React from 'react';
-import { OrderItem } from '@/types/order';
+import { ItemStatus, OrderItem, OrderItemUnit } from '@/types/order';
+import { cn } from '@/components/ui/utils';
 
 interface OrderItemRowProps {
   item: OrderItem;
-  onClick: () => void;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  onCycleStatus: () => void;
+  onUnitClick: (unit: OrderItemUnit, status: ItemStatus) => void;
 }
 
-export function OrderItemRow({ item, onClick }: OrderItemRowProps) {
-  const status = item.itemStatus || 'pending';
+const ITEM_STATUSES: ItemStatus[] = ['pending', 'ready', 'delivered'];
+
+const STATUS_LABELS: Record<ItemStatus, string> = {
+  pending: 'NEW',
+  ready: 'STARTED',
+  delivered: 'DONE',
+};
+
+export function OrderItemRow({
+  item,
+  isExpanded,
+  onToggleExpand,
+  onCycleStatus,
+  onUnitClick,
+}: OrderItemRowProps) {
+  const status = item.itemStatus ?? 'pending';
   
   const statusStyles = {
     pending: 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400',
@@ -17,26 +35,77 @@ export function OrderItemRow({ item, onClick }: OrderItemRowProps) {
     delivered: 'bg-green-500 text-white border-transparent',
   };
 
+  const units = item.units ?? Array.from({ length: item.quantity }, (_value, index) => ({
+    id: `${item.id}-unit-${index}`,
+    status: status,
+    unitIndex: index,
+  }));
+  const unitStatuses = units.map(unit => unit.status);
+  const mixedStatus = item.quantity > 1 && new Set(unitStatuses).size > 1;
+
+  const handleItemClick = () => {
+    if (item.quantity > 1) {
+      onToggleExpand();
+      return;
+    }
+    onCycleStatus();
+  };
+
   return (
-    <button
-      onClick={onClick}
-      className={`w-full text-right py-1 px-2 rounded border-2 transition-all ${statusStyles[status]}`}
-    >
-      <div className="flex flex-col">
-        <div className="flex items-center justify-end gap-3">
-          <span className="text-sm font-medium">
-            {item.name}
-          </span>
-          <span className="text-lg font-bold">
-            ×{item.quantity}
-          </span>
-        </div>
-        {item.extraNotes && (
-          <div className="text-[10px] font-bold italic opacity-80 -mt-1">
-            {item.extraNotes}
-          </div>
+    <div className="space-y-2">
+      <button
+        onClick={handleItemClick}
+        className={cn(
+          'w-full text-right py-1 px-2 rounded border-2 transition-all',
+          statusStyles[status],
+          item.quantity > 1 && 'cursor-pointer'
         )}
-      </div>
-    </button>
+      >
+        <div className="flex flex-col">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">
+                {item.name}
+              </span>
+              {mixedStatus && (
+                <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200">
+                  ΜΕΙΚΤΟ
+                </span>
+              )}
+            </div>
+            <span className="text-lg font-bold">
+              ×{item.quantity}
+            </span>
+          </div>
+          {item.extraNotes && (
+            <div className="text-[10px] font-bold italic opacity-80 -mt-1">
+              {item.extraNotes}
+            </div>
+          )}
+        </div>
+      </button>
+      {isExpanded && item.quantity > 1 && (
+        <div className="space-y-1">
+          {units.map((unit) => {
+            const unitStatus = unit.status;
+            return (
+              <div key={unit.id} className="flex items-center justify-between gap-3">
+                <button
+                  onClick={() => onUnitClick(unit, unitStatus)}
+                  className={cn(
+                    'flex-1 text-right py-1 px-2 rounded border-2 transition-all text-xs',
+                    statusStyles[unitStatus]
+                  )}
+                >
+                  <span className="font-medium">
+                    {item.name} ×1
+                  </span>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

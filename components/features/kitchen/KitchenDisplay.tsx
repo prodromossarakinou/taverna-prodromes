@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useOrders } from '@/contexts/OrderContext';
+import { OrderCategory } from '@/types/order';
 import { KitchenHeader } from './KitchenHeader';
 import { OrderCard } from './OrderCard';
 import { Button } from '@/components/ui/Button';
@@ -15,16 +16,32 @@ import {
 
 const FILTER_STORAGE_KEY = 'kitchen-status-filters';
 
+const CATEGORY_LABELS: Record<OrderCategory, string> = {
+  'Κρύα': 'ΚΡΥΑ ΚΟΥΖΙΝΑ',
+  'Ζεστές': 'ΖΕΣΤΕΣ ΣΑΛΑΤΕΣ',
+  'Ψησταριά': 'ΨΗΣΤΑΡΙΑ',
+  'Μαγειρευτό': 'ΜΑΓΕΙΡΕΥΤΟ',
+  'Ποτά': 'ΠΟΤΑ',
+};
+
 interface KitchenDisplayProps {
   onSwitchView: (view: 'waiter' | 'kitchen' | 'admin') => void;
   ThemeToggle: React.ReactNode;
 }
 
 export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProps) {
-  const { orders, deleteOrder, updateItemStatus, refreshOrders } = useOrders();
+  const {
+    orders,
+    deleteOrder,
+    updateItemStatus,
+    updateItemUnitStatus,
+    setItemStatus,
+    refreshOrders,
+  } = useOrders();
   const [statusFilters, setStatusFilters] = useState<Record<KitchenOrderFilterKey, boolean>>({
     ...DEFAULT_KITCHEN_FILTERS,
   });
+  const [selectedCategory, setSelectedCategory] = useState<OrderCategory | 'all'>('all');
   const [pendingUpdates, setPendingUpdates] = useState(0);
   const [isApplyingUpdates, setIsApplyingUpdates] = useState(false);
   const mappedOrders = useMemo(
@@ -41,7 +58,13 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
   const buildOrderSignature = (order: typeof mappedOrders[number]) => {
     const itemsSignature = [...order.items]
       .sort((a, b) => a.id.localeCompare(b.id))
-      .map(item => `${item.id}:${item.itemStatus}:${item.quantity}:${item.extraNotes ?? ''}`)
+      .map(item => {
+        const unitsSignature = (item.units ?? [])
+          .map(unit => `${unit.id}:${unit.status}`)
+          .sort()
+          .join(',');
+        return `${item.id}:${item.itemStatus}:${item.quantity}:${item.extraNotes ?? ''}:${unitsSignature}`;
+      })
       .join('|');
     return `${order.orderStatus}:${order.createdAt}:${itemsSignature}`;
   };
@@ -133,16 +156,24 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
     }
   }, [mappedOrders]);
 
-  const filteredOrders = useMemo(() => {
+  const statusFilteredOrders = useMemo(() => {
     return mappedOrders
       .filter(order => statusFilters[resolveOrderStatus(order)])
-      .sort((a, b) => a.createdAt - b.createdAt)
-      .slice(0, 10);
+      .sort((a, b) => a.createdAt - b.createdAt);
   }, [mappedOrders, statusFilters]);
 
-  const filteredOrdersCount = useMemo(() => {
-    return mappedOrders.filter(order => statusFilters[resolveOrderStatus(order)]).length;
-  }, [mappedOrders, statusFilters]);
+  const categoryFilteredOrders = useMemo(() => {
+    if (selectedCategory === 'all') {
+      return statusFilteredOrders;
+    }
+    return statusFilteredOrders.filter(order =>
+      order.items.some(item => item.category === selectedCategory)
+    );
+  }, [selectedCategory, statusFilteredOrders]);
+
+  const filteredOrders = useMemo(() => {
+    return categoryFilteredOrders.slice(0, 10);
+  }, [categoryFilteredOrders]);
 
   const handleFilterToggle = (key: KitchenOrderFilterKey) => {
     setStatusFilters(prev => ({
@@ -162,12 +193,15 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
   return (
     <div className="min-h-screen bg-background">
       <KitchenHeader
-        pendingCount={filteredOrdersCount}
+        pendingCount={statusFilteredOrders.length}
         statusFilters={statusFilters}
         filterKeys={KITCHEN_FILTER_KEYS}
         filterLabels={KITCHEN_FILTER_LABELS}
         onFilterToggle={handleFilterToggle}
         onFilterReset={handleFilterReset}
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        categoryLabels={CATEGORY_LABELS}
         onSwitchView={onSwitchView}
         ThemeToggle={ThemeToggle}
       />
@@ -185,7 +219,9 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
                 order={order}
                 index={index}
                 onDelete={deleteOrder}
-                onItemClick={handleItemClick}
+                onItemStatusCycle={handleItemClick}
+                onUnitStatusCycle={updateItemUnitStatus}
+                onSetItemStatus={setItemStatus}
               />
             ))}
           </div>

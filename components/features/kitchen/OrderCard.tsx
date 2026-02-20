@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Order, OrderCategory, OrderItem } from '@/types/order';
+import { ItemStatus, Order, OrderCategory, OrderItem, OrderItemUnit } from '@/types/order';
 import { OrderItemRow } from './OrderItemRow';
 import { cn } from '@/components/ui/utils';
 import { getOrderAccent } from './orderStatus';
@@ -20,33 +20,65 @@ interface OrderCardProps {
   order: Order;
   index: number;
   onDelete: (id: string) => void;
-  onItemClick: (orderId: string, itemId: string) => void;
+  onItemStatusCycle: (orderId: string, itemId: string) => Promise<void>;
+  onUnitStatusCycle: (orderId: string, unitId: string, status: ItemStatus) => Promise<void>;
+  onSetItemStatus: (orderId: string, itemId: string, status: ItemStatus) => Promise<void>;
 }
 
 export function OrderCard({
   order,
   index,
   onDelete,
-  onItemClick,
+  onItemStatusCycle,
+  onUnitStatusCycle,
+  onSetItemStatus,
 }: OrderCardProps) {
   const accentClass = getOrderAccent(order);
-  const groupItemsByCategory = (items: OrderItem[]) => {
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+
+  const groupedItems = useMemo(() => {
     const grouped: Record<string, OrderItem[]> = {};
-    items.forEach(item => {
+    order.items.forEach(item => {
       if (!grouped[item.category]) {
         grouped[item.category] = [];
       }
       grouped[item.category].push(item);
     });
     return grouped;
-  };
-
-  const groupedItems = groupItemsByCategory(order.items);
+  }, [order.items]);
   const orderTime = new Intl.DateTimeFormat('el-GR', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
   }).format(new Date(order.timestamp));
+
+  const buildUnitList = (item: OrderItem): OrderItemUnit[] => {
+    if (item.units && item.units.length > 0) {
+      return item.units;
+    }
+    return Array.from({ length: item.quantity }, (_value, index) => ({
+      id: `${item.id}-unit-${index}`,
+      status: item.itemStatus ?? 'pending',
+      unitIndex: index,
+    }));
+  };
+
+  const handleUnitClick = async (item: OrderItem, unit: OrderItemUnit, status: ItemStatus) => {
+    const statuses: ItemStatus[] = ['pending', 'ready', 'delivered'];
+    const currentIndex = statuses.indexOf(status || 'pending');
+    const nextStatus = statuses[(currentIndex + 1) % statuses.length];
+    await onUnitStatusCycle(order.id, unit.id, status);
+
+    const unitStatuses = buildUnitList(item).map(unitItem =>
+      unitItem.id === unit.id ? nextStatus : unitItem.status
+    );
+    const isUnified = unitStatuses.every(unitStatus => unitStatus === unitStatuses[0]);
+    const shouldCollapse = isUnified && (nextStatus === 'ready' || nextStatus === 'delivered');
+    if (shouldCollapse) {
+      await onSetItemStatus(order.id, item.id, nextStatus);
+      setExpandedItems(prev => ({ ...prev, [item.id]: false }));
+    }
+  };
 
   return (
     <div
@@ -100,7 +132,15 @@ export function OrderCard({
                 <OrderItemRow
                   key={item.id}
                   item={item}
-                  onClick={() => onItemClick(order.id, item.id)}
+                  isExpanded={Boolean(expandedItems[item.id])}
+                  onToggleExpand={() =>
+                    setExpandedItems(prev => ({
+                      ...prev,
+                      [item.id]: !prev[item.id],
+                    }))
+                  }
+                  onCycleStatus={() => onItemStatusCycle(order.id, item.id)}
+                  onUnitClick={(unit, status) => handleUnitClick(item, unit, status)}
                 />
               ))}
             </div>
