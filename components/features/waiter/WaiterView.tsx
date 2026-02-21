@@ -63,6 +63,8 @@ export function WaiterView({
   // Confirmation popups for submit & clear
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
+  // Bill popup state
+  const [billOpen, setBillOpen] = useState(false);
 
   const activeMenuItems: MenuItemType[] = menuItems.filter((item) => item.active);
   const menuCategories = Array.from(
@@ -234,6 +236,7 @@ export function WaiterView({
         onStartNew={onStartNew}
         onRequestPick={onRequestPick}
         onOpenMobileMenu={onOpenMobileMenu}
+        onOpenBill={() => setBillOpen(true)}
         ThemeToggle={ThemeToggle}
       />
 
@@ -290,6 +293,22 @@ export function WaiterView({
         <div className="space-y-2">
           <Label htmlFor="order-notes-popup">Σημειώσεις</Label>
           <Input id="order-notes-popup" value={tempOrderNotes} onChange={(e) => setTempOrderNotes(e.target.value)} className="h-12" />
+        </div>
+      </Popup>
+
+      {/* Bill Calculation Popup (skeleton) */}
+      <Popup
+        open={billOpen}
+        title="Λογαριασμός"
+        onClose={() => setBillOpen(false)}
+        onConfirm={() => setBillOpen(false)}
+        confirmText="Κλείσιμο"
+      >
+        <div className="space-y-3 text-sm">
+          <div className="text-muted-foreground">
+            Επιλέξτε τραπέζι για υπολογισμό λογαριασμού. Θα εμφανιστεί αναλυτική ανάλυση (βάση + extras) και σύνολα.
+          </div>
+          {/* TODO: Implement table picker and bill breakdown in subsequent steps */}
         </div>
       </Popup>
 

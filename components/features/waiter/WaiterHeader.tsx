@@ -17,6 +17,7 @@ interface WaiterHeaderProps {
   onStartNew: () => void;
   onRequestPick: (mode: 'view' | 'extras') => void;
   onOpenMobileMenu: () => void;
+  onOpenBill: () => void;
 }
 
 export function WaiterHeader({
@@ -32,13 +33,23 @@ export function WaiterHeader({
   onStartNew,
   onRequestPick,
   onOpenMobileMenu,
+  onOpenBill,
   ThemeToggle,
 }: WaiterHeaderProps & { ThemeToggle: React.ReactNode }) {
   return (
     <div className="bg-linear-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 text-white px-6 py-4 shadow-lg">
       <div className="flex items-center justify-between">
         <div className="flex flex-col">
-          <h1 className="text-xl font-bold">Λήψη Παραγγελίας</h1>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={onOpenBill}
+              variant="secondary"
+              className="h-8 px-3 bg-white/10 border-white/20 text-white hover:bg-white/15 text-[10px] font-bold uppercase"
+            >
+              Λογαριασμός
+            </Button>
+            <h1 className="text-xl font-bold">Λήψη Παραγγελίας</h1>
+          </div>
           <div className="flex gap-2 mt-2">
             <Button
               onClick={onEditTable}
