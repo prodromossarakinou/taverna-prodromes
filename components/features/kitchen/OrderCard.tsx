@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ItemStatus, Order, OrderCategory, OrderItem, OrderItemUnit } from '@/types/order';
 import { OrderItemRow } from './OrderItemRow';
@@ -67,6 +66,7 @@ export function OrderCard({
     });
     return grouped;
   }, [order.items]);
+  const normalizedStatus = normalizeOrderStatus(order.status);
   const orderTime = new Intl.DateTimeFormat('el-GR', {
     hour: '2-digit',
     minute: '2-digit',
@@ -234,14 +234,16 @@ export function OrderCard({
               Edit
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onDelete(order.id)}
-            className="h-7 w-7 shrink-0 p-0 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
-          >
-            <X className="size-4" />
-          </Button>
+          {normalizedStatus === 'closed' && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => onDelete(order.id)}
+              className="h-7 px-3"
+            >
+              Οριστική διαγραφή
+            </Button>
+          )}
         </div>
       </div>
 

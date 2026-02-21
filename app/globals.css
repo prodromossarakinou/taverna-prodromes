@@ -239,4 +239,51 @@
     background-color: var(--kitchen-status-extra);
     color: var(--kitchen-status-extra-foreground);
   }
+
+  .kitchen-filter-button {
+    border-color: var(--kitchen-order-accent);
+    color: var(--kitchen-order-accent);
+    background-color: transparent;
+  }
+
+  .kitchen-filter-button.is-active {
+    background-color: var(--kitchen-order-accent);
+    border-color: var(--kitchen-order-accent);
+    color: var(--kitchen-order-accent-foreground);
+  }
+
+  .dark {
+    .kitchen-order-card {
+      border-color: color-mix(in srgb, var(--kitchen-order-accent), transparent 20%);
+    }
+
+    .kitchen-order-card-header {
+      background-color: color-mix(in srgb, var(--kitchen-order-accent), transparent 85%);
+      border-color: color-mix(in srgb, var(--kitchen-order-accent), transparent 20%);
+      color: var(--foreground);
+    }
+
+    .kitchen-order-accent-badge {
+      background-color: color-mix(in srgb, var(--kitchen-order-accent), transparent 70%);
+      color: var(--foreground);
+      border: 1px solid color-mix(in srgb, var(--kitchen-order-accent), transparent 20%);
+    }
+
+    .kitchen-order-extra-badge {
+      background-color: color-mix(in srgb, var(--kitchen-status-extra), transparent 85%);
+      color: var(--kitchen-status-extra);
+      border: 1px solid color-mix(in srgb, var(--kitchen-status-extra), transparent 20%);
+    }
+
+    .kitchen-filter-button {
+      border-color: color-mix(in srgb, var(--kitchen-order-accent), transparent 20%);
+      color: var(--kitchen-order-accent);
+    }
+
+    .kitchen-filter-button.is-active {
+      background-color: color-mix(in srgb, var(--kitchen-order-accent), transparent 85%);
+      border-color: color-mix(in srgb, var(--kitchen-order-accent), transparent 20%);
+      color: var(--kitchen-order-accent);
+    }
+  }
 }

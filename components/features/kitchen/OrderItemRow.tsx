@@ -41,8 +41,8 @@ export function OrderItemRow({
   
   const statusStyles = {
     pending: 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400',
-    ready: 'bg-blue-500 text-white border-transparent',
-    delivered: 'bg-green-500 text-white border-transparent',
+    ready: 'bg-blue-500 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/80 text-white border-transparent',
+    delivered: 'bg-green-500 dark:bg-green-500/20 dark:text-green-400 dark:border-green-500/80 text-white border-transparent',
   };
 
   const units = item.units && item.units.length > 0

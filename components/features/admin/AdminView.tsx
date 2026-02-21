@@ -123,7 +123,7 @@ export function AdminView({ onSwitchView, ThemeToggle }: AdminViewProps) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b-2 border-border bg-white dark:bg-gray-800 p-4">
+      <header className="border-b-2 border-border bg-white dark:bg-gray-800 p-4 dark:border-gray-700/80">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Settings className="size-5 text-muted-foreground" />
@@ -135,7 +135,7 @@ export function AdminView({ onSwitchView, ThemeToggle }: AdminViewProps) {
               variant="outline"
               size="sm"
               onClick={() => onSwitchView('waiter')}
-              className="h-9 px-3"
+              className="h-9 px-3 dark:bg-gray-800 dark:border-gray-700/80"
             >
               Waiter
             </Button>
@@ -143,7 +143,7 @@ export function AdminView({ onSwitchView, ThemeToggle }: AdminViewProps) {
               variant="outline"
               size="sm"
               onClick={() => onSwitchView('kitchen')}
-              className="h-9 px-3"
+              className="h-9 px-3 dark:bg-gray-800 dark:border-gray-700/80"
             >
               Kitchen
             </Button>

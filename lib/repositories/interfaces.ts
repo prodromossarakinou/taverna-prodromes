@@ -10,6 +10,7 @@ export interface IMenuRepository {
 export interface IOrderRepository {
   getOrders(): Promise<Order[]>;
   createOrder(order: Omit<Order, 'id' | 'timestamp' | 'status'>): Promise<Order>;
+  deleteOrder(orderId: string): Promise<void>;
   updateOrderStatus(orderId: string, status: OrderStatus): Promise<Order>;
   updateOrderItemStatus(orderId: string, itemId: string, status: ItemStatus): Promise<Order>;
   updateOrderItemUnitStatus(orderId: string, unitId: string, status: ItemStatus): Promise<Order>;

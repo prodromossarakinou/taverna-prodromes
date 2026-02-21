@@ -51,8 +51,9 @@ export function normalizeOrderStatus(status?: string | null): KitchenOrderStatus
 }
 
 export function resolveOrderStatus(order: Order): KitchenOrderFilterKey {
-  if (order.isExtra) return 'extra';
-  return normalizeOrderStatus(order.status);
+  const normalizedStatus = normalizeOrderStatus(order.status);
+  if (order.isExtra && normalizedStatus === 'new') return 'extra';
+  return normalizedStatus;
 }
 
 export function getOrderAccent(order: Order): string {

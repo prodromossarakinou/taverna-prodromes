@@ -40,6 +40,12 @@ export class MockOrderRepository implements IOrderRepository {
     return newOrder;
   }
 
+  async deleteOrder(orderId: string): Promise<void> {
+    const index = mockOrders.findIndex(o => o.id === orderId);
+    if (index === -1) throw new Error('Order not found');
+    mockOrders.splice(index, 1);
+  }
+
   async updateOrderStatus(orderId: string, status: OrderStatus): Promise<Order> {
     const index = mockOrders.findIndex(o => o.id === orderId);
     if (index === -1) throw new Error('Order not found');

@@ -23,10 +23,11 @@ export function CategorySelector({
           <button
             key={cat}
             onClick={() => onSelect(cat)}
-            className={`px-4 py-3 whitespace-nowrap transition-all text-sm font-medium ${
-              selectedCategory === cat
-                ? `${categoryColors[cat]} text-white`
-                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+            className={`px-4 py-3 whitespace-nowrap transition-all text-sm font-medium border-b-2 
+              ${selectedCategory === cat
+                ? `${categoryColors[cat]} text-white border-transparent 
+                   dark:bg-opacity-20 dark:text-gray-100 dark:border-current`
+                : 'text-gray-600 dark:text-gray-400 border-transparent hover:bg-gray-50 dark:hover:bg-gray-700'
             }`}
           >
             {cat}

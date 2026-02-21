@@ -39,3 +39,20 @@ export async function PATCH(
     return NextResponse.json({ error: 'Failed to update order' }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    await orderRepository.deleteOrder(id);
+    return new NextResponse(null, { status: 204 });
+  } catch (error: any) {
+    console.error('Error deleting order:', error);
+    if (error.message === 'Order not found') {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+    return NextResponse.json({ error: 'Failed to delete order' }, { status: 500 });
+  }
+}

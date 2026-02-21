@@ -47,9 +47,16 @@ export function OrderProvider({children}: { children: ReactNode }) {
                         if (order.items.length !== nextOrder.items.length) return false;
                         return order.items.every((item, itemIndex) => {
                             const nextItem = nextOrder.items[itemIndex];
-                            return nextItem
-                                ? item.id === nextItem.id && item.itemStatus === nextItem.itemStatus
-                                : false;
+                            if (!nextItem) return false;
+                            if (item.id !== nextItem.id) return false;
+                            if (item.itemStatus !== nextItem.itemStatus) return false;
+                            if (item.units?.length !== nextItem.units?.length) return false;
+                            return (item.units ?? []).every((unit, unitIndex) => {
+                                const nextUnit = nextItem.units?.[unitIndex];
+                                return nextUnit
+                                    ? unit.id === nextUnit.id && unit.status === nextUnit.status
+                                    : false;
+                            });
                         });
                     });
                     if (isSame) return prev;
@@ -115,7 +122,15 @@ export function OrderProvider({children}: { children: ReactNode }) {
     };
 
     const deleteOrder = async (orderId: string) => {
-        await updateOrder(orderId, { status: 'cancelled' });
+        try {
+            const response = await fetch(`/api/orders/${orderId}`, {
+                method: 'DELETE',
+            });
+            if (!response.ok) throw new Error('Failed to delete order');
+            await fetchOrders();
+        } catch (error) {
+            console.error('Error deleting order:', error);
+        }
     };
 
     const updateItemStatus = async (orderId: string, itemId: string) => {

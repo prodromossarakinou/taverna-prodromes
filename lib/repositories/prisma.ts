@@ -137,6 +137,34 @@ export class PrismaOrderRepository implements IOrderRepository {
     };
   }
 
+  async deleteOrder(orderId: string): Promise<void> {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { id: true },
+    });
+
+    if (!order) throw new Error('Order not found');
+
+    const orderItems = await prisma.orderItem.findMany({
+      where: { orderId },
+      select: { id: true },
+    });
+
+    const orderItemIds = orderItems.map(item => item.id);
+
+    await prisma.$transaction([
+      prisma.orderItemUnit.deleteMany({
+        where: { orderItemId: { in: orderItemIds } },
+      }),
+      prisma.orderItem.deleteMany({
+        where: { orderId },
+      }),
+      prisma.order.delete({
+        where: { id: orderId },
+      }),
+    ]);
+  }
+
   async updateOrderStatus(orderId: string, status: OrderStatus): Promise<Order> {
     const order = await prisma.order.update({
       where: { id: orderId },
@@ -206,10 +234,45 @@ export class PrismaOrderRepository implements IOrderRepository {
   }
 
   async updateOrderItemUnitStatus(orderId: string, unitId: string, status: ItemStatus): Promise<Order> {
-    await prisma.orderItemUnit.update({
+    const updateResult = await prisma.orderItemUnit.updateMany({
       where: { id: unitId },
       data: { status },
     });
+
+    if (updateResult.count === 0) {
+      const parsed = unitId.match(/^(.*)-unit-(\d+)$/);
+      if (!parsed) throw new Error('Order item unit not found');
+
+      const orderItemId = parsed[1];
+      const unitIndex = Number.parseInt(parsed[2], 10);
+
+      if (Number.isNaN(unitIndex)) throw new Error('Order item unit not found');
+
+      const item = await prisma.orderItem.findFirst({
+        where: { id: orderItemId, orderId },
+      });
+
+      if (!item) throw new Error('Order item not found');
+
+      const existingUnit = await prisma.orderItemUnit.findFirst({
+        where: { orderItemId, unitIndex },
+      });
+
+      if (existingUnit) {
+        await prisma.orderItemUnit.update({
+          where: { id: existingUnit.id },
+          data: { status },
+        });
+      } else {
+        await prisma.orderItemUnit.create({
+          data: {
+            orderItemId,
+            unitIndex,
+            status,
+          },
+        });
+      }
+    }
 
     const order = await prisma.order.findUnique({
       where: { id: orderId },
