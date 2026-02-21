@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/Label';
 import { CategorySelector } from './CategorySelector';
 import { MenuGrid } from './MenuGrid';
 import { OrderSummary } from './OrderSummary';
+import { ScrollArea } from '@/components/ui/ScrollArea';
+import { cn } from '@/components/ui/utils';
 
 interface WaiterViewProps {
   params: WaiterParams;
@@ -65,6 +67,67 @@ export function WaiterView({
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   // Bill popup state
   const [billOpen, setBillOpen] = useState(false);
+  // Bill/table picker state
+  const [selectedBillTable, setSelectedBillTable] = useState<string | null>(null);
+  const [billLoading, setBillLoading] = useState(false);
+  const [billError, setBillError] = useState<string | null>(null);
+  const [billData, setBillData] = useState<{
+    baseOrders: typeof orders;
+    extraOrders: typeof orders;
+    totals: { baseTotal: number; extrasTotal: number; grandTotal: number };
+    missingPriceItemIds: string[];
+  } | null>(null);
+
+  // Build bill for a selected table (aggregation + totals)
+  const buildBill = (table: string) => {
+    try {
+      setBillError(null);
+      setBillLoading(true);
+
+      const related = orders.filter((o) => o.tableNumber === table);
+      const baseOrders = related.filter((o) => !o.isExtra && !o.parentId);
+      const extraOrders = related.filter((o) => o.isExtra === true || Boolean(o.parentId));
+
+      const priceById = new Map(menuItems.map((m) => [m.id, m.price]));
+      const missing: string[] = [];
+
+      const calcSection = (sectionOrders: typeof orders) => {
+        let total = 0;
+        for (const o of sectionOrders) {
+          for (const it of o.items) {
+            const p = priceById.get(it.id);
+            if (typeof p !== 'number' || !Number.isFinite(p)) {
+              missing.push(`${o.id}:${it.id}`);
+              total += 0;
+            } else {
+              total += (it.quantity ?? 0) * p;
+            }
+          }
+        }
+        return total;
+      };
+
+      const baseTotal = calcSection(baseOrders);
+      const extrasTotal = calcSection(extraOrders);
+      const grandTotal = baseTotal + extrasTotal;
+
+      if (missing.length > 0) {
+        // eslint-disable-next-line no-console
+        console.warn('Bill calculation: missing prices for items', missing);
+      }
+
+      setBillData({
+        baseOrders,
+        extraOrders,
+        totals: { baseTotal, extrasTotal, grandTotal },
+        missingPriceItemIds: missing,
+      });
+    } catch (e: any) {
+      setBillError(e?.message ?? 'Αποτυχία υπολογισμού λογαριασμού');
+    } finally {
+      setBillLoading(false);
+    }
+  };
 
   const activeMenuItems: MenuItemType[] = menuItems.filter((item) => item.active);
   const menuCategories = Array.from(
@@ -300,15 +363,170 @@ export function WaiterView({
       <Popup
         open={billOpen}
         title="Λογαριασμός"
-        onClose={() => setBillOpen(false)}
+        onClose={() => { setBillOpen(false); setSelectedBillTable(null); setBillData(null); setBillError(null); }}
         onConfirm={() => setBillOpen(false)}
         confirmText="Κλείσιμο"
       >
-        <div className="space-y-3 text-sm">
+        <div className="flex flex-col gap-3 text-sm max-h-[70vh]">
+          {/* Header / Instructions */}
           <div className="text-muted-foreground">
             Επιλέξτε τραπέζι για υπολογισμό λογαριασμού. Θα εμφανιστεί αναλυτική ανάλυση (βάση + extras) και σύνολα.
           </div>
-          {/* TODO: Implement table picker and bill breakdown in subsequent steps */}
+
+          {/* Table Picker */}
+          <div className="rounded-lg border bg-card text-card-foreground">
+            <div className="px-3 py-2 border-b text-xs font-semibold opacity-80">Ενεργά Τραπέζια</div>
+            <ScrollArea className="max-h-40">
+              <div className="p-2 space-y-1">
+                {(() => {
+                  // Determine open tables: any order with status NOT completed/cancelled
+                  const OPEN_STATUSES_EXCLUDE = new Set(['completed', 'cancelled']);
+                  const openOrders = orders.filter((o) => !OPEN_STATUSES_EXCLUDE.has((o.status as string) ?? ''));
+                  const byTable = new Map<string, { count: number; hasExtras: boolean }>();
+                  for (const o of openOrders) {
+                    const key = o.tableNumber;
+                    const prev = byTable.get(key) ?? { count: 0, hasExtras: false };
+                    byTable.set(key, { count: prev.count + 1, hasExtras: prev.hasExtras || Boolean(o.isExtra) });
+                  }
+                  const entries = Array.from(byTable.entries()).sort((a, b) => {
+                    const an = parseInt(a[0], 10);
+                    const bn = parseInt(b[0], 10);
+                    if (!Number.isNaN(an) && !Number.isNaN(bn)) return an - bn;
+                    return a[0].localeCompare(b[0], 'el');
+                  });
+
+                  if (!orders.length) {
+                    return (
+                      <div className="text-center py-4 text-muted-foreground">Φόρτωση...</div>
+                    );
+                  }
+
+                  if (entries.length === 0) {
+                    return (
+                      <div className="text-center py-4 text-muted-foreground">Δεν υπάρχουν ενεργά τραπέζια</div>
+                    );
+                  }
+
+                  return entries.map(([table, info]) => (
+                    <button
+                      key={table}
+                      type="button"
+                      onClick={() => {
+                        setSelectedBillTable(table);
+                        buildBill(table);
+                      }}
+                      className={cn(
+                        'w-full text-left px-3 py-2 rounded-md border transition-all',
+                        selectedBillTable === table
+                          ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-500/10 dark:border-blue-500/60 dark:text-blue-300'
+                          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="font-semibold">Τραπέζι {table}</div>
+                        <div className="text-xs opacity-80">
+                          {info.count} παραγγ.{info.count !== 1 ? '' : ''} {info.hasExtras ? '• + extras' : ''}
+                        </div>
+                      </div>
+                    </button>
+                  ));
+                })()}
+              </div>
+            </ScrollArea>
+          </div>
+
+          {/* Content area: Bill breakdown and sticky totals */}
+          <div className="flex flex-col gap-3 min-h-[200px]">
+            {billLoading && (
+              <div className="text-center py-6 text-muted-foreground">Φόρτωση λογαριασμού...</div>
+            )}
+            {billError && (
+              <div className="text-center py-6 text-destructive">Σφάλμα: {billError}</div>
+            )}
+            {!billLoading && !billError && selectedBillTable && billData && (
+              <>
+                <ScrollArea className="max-h-60 rounded-md border bg-card">
+                  <div className="p-3 space-y-4">
+                    {/* Base Orders */}
+                    <div>
+                      <div className="text-xs font-bold uppercase opacity-80 mb-2">BASE ORDER</div>
+                      <div className="space-y-1">
+                        {billData.baseOrders.flatMap((o) =>
+                          o.items.map((it) => {
+                            const menu = menuItems.find((m) => m.id === it.id);
+                            const price = menu?.price;
+                            const hasPrice = typeof price === 'number' && Number.isFinite(price);
+                            const lineTotal = (it.quantity ?? 0) * (hasPrice ? (price as number) : 0);
+                            return (
+                              <div key={`${o.id}-${it.id}`} className="flex items-center justify-between text-sm px-2 py-1 rounded hover:bg-accent/50">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">{it.quantity}× {it.name}</span>
+                                  {!hasPrice && (
+                                    <span className="text-amber-600 dark:text-amber-300 text-[10px] font-bold uppercase">NO PRICE</span>
+                                  )}
+                                </div>
+                                <div className="font-semibold">€{lineTotal.toFixed(2)}</div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Extras */}
+                    <div>
+                      <div className="text-xs font-bold uppercase opacity-80 mb-2">EXTRA</div>
+                      {billData.extraOrders.length === 0 ? (
+                        <div className="text-xs text-muted-foreground px-2">—</div>
+                      ) : (
+                        <div className="space-y-1">
+                          {billData.extraOrders.flatMap((o) =>
+                            o.items.map((it) => {
+                              const menu = menuItems.find((m) => m.id === it.id);
+                              const price = menu?.price;
+                              const hasPrice = typeof price === 'number' && Number.isFinite(price);
+                              const lineTotal = (it.quantity ?? 0) * (hasPrice ? (price as number) : 0);
+                              return (
+                                <div key={`${o.id}-${it.id}`} className="flex items-center justify-between text-sm px-2 py-1 rounded hover:bg-accent/50">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">{it.quantity}× {it.name}</span>
+                                    {!hasPrice && (
+                                      <span className="text-amber-600 dark:text-amber-300 text-[10px] font-bold uppercase">NO PRICE</span>
+                                    )}
+                                  </div>
+                                  <div className="font-semibold">€{lineTotal.toFixed(2)}</div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </ScrollArea>
+
+                {/* Divider */}
+                <div className="h-px bg-border" />
+
+                {/* Totals (sticky) */}
+                <div className="rounded-md border bg-card p-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="opacity-80">Base</span>
+                    <span className="font-semibold">€{billData.totals.baseTotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm mt-1">
+                    <span className="opacity-80">Extras</span>
+                    <span className="font-semibold">€{billData.totals.extrasTotal.toFixed(2)}</span>
+                  </div>
+                  <div className="h-px bg-border my-2" />
+                  <div className="flex items-center justify-between text-base font-bold">
+                    <span>Σύνολο</span>
+                    <span>€{billData.totals.grandTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </Popup>
 
