@@ -20,6 +20,8 @@ interface KitchenHeaderProps {
   // View Switcher Props
   onSwitchView: (view: 'waiter' | 'kitchen' | 'admin') => void;
   ThemeToggle: React.ReactNode;
+  // Bill Popup
+  onOpenBill: () => void;
 }
 
 export function KitchenHeader({
@@ -34,6 +36,7 @@ export function KitchenHeader({
   categoryLabels,
   onSwitchView,
   ThemeToggle,
+  onOpenBill,
 }: KitchenHeaderProps) {
   const categoryEntries: Array<[OrderCategory | 'all', string]> = [
     ['all', 'ΟΛΑ'],
@@ -44,7 +47,17 @@ export function KitchenHeader({
     <div className="shadow-md flex-shrink-0">
       {/* Title Bar */}
       <div className="bg-linear-to-r from-blue-700 to-blue-800 dark:from-blue-900 dark:to-slate-950 text-white p-4 flex items-center justify-between border-b dark:border-blue-900/50">
-        <h1 className="text-2xl font-bold">ΠΑΣΟ - {pendingCount} Παραγγελίες</h1>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onOpenBill}
+            className="h-9 px-4 bg-white/10 text-white border-white/20 hover:bg-white/15 font-bold uppercase"
+          >
+            Λογαριασμός
+          </Button>
+          <h1 className="text-2xl font-bold">ΠΑΣΟ - {pendingCount} Παραγγελίες</h1>
+        </div>
         <div className="flex items-center gap-3">
           {ThemeToggle}
           <Button

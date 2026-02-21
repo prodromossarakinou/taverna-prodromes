@@ -446,7 +446,7 @@ export function WaiterView({
             {!billLoading && !billError && selectedBillTable && billData && (
               <>
                 <ScrollArea className="max-h-60 rounded-md border bg-card">
-                  <div className="p-3 space-y-4">
+                  <div className="p-3 space-y-4 pb-24">
                     {/* Base Orders */}
                     <div>
                       <div className="text-xs font-bold uppercase opacity-80 mb-2">BASE ORDER</div>
