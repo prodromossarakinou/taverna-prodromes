@@ -31,6 +31,21 @@ export function HomeClient({ initialView }: HomeClientProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialView]);
 
+  // Αν δεν δίνεται initialView από τον server, διάβασε το ?view=... από το URL στην πλευρά του client
+  useEffect(() => {
+    if (initialView) return; // ο server ήδη όρισε αρχική προβολή
+    try {
+      const v = new URLSearchParams(window.location.search).get('view');
+      if (v === 'kitchen' || v === 'admin' || v === 'waiter') {
+        setView(v);
+      }
+    } catch {
+      // no-op σε περιβάλλοντα χωρίς window
+    }
+    // μία φορά στο mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const startNew = () => setWaiterParams({ mode: 'new' });
   const requestPick = (mode: Extract<WaiterMode, 'view' | 'extras'>) => setOrderPickFor(mode);
   const pickOrder = (id: string) => {

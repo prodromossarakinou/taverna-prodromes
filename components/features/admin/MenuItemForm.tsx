@@ -7,18 +7,12 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Switch } from '@/components/ui/Switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
+// Κατάργηση Select για κατηγορίες: θα χρησιμοποιήσουμε free-text με προτάσεις (datalist)
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/Sheet';
 import { toast } from 'sonner';
 
-const CATEGORY_LABELS: Record<OrderCategory, string> = {
-  'Κρύα': 'Κρύα Κουζίνα/Σαλάτες',
-  'Ζεστές': 'Ζεστές Σαλάτες',
-  'Ψησταριά': 'Ψησταριά',
-  'Μαγειρευτό': 'Μαγειρευτό',
-  'Ποτά': 'Αναψυκτικά/Ποτά',
-};
+// Σημείωση: Οι κατηγορίες είναι δυναμικές και παρέχονται από τον γονέα (AdminView)
 
 interface MenuItemFormProps {
   open: boolean;
@@ -27,9 +21,10 @@ interface MenuItemFormProps {
   onDelete?: () => void;
   editItem?: MenuItem;
   isMobile?: boolean;
+  categories?: OrderCategory[]; // δυναμικές κατηγορίες για προτάσεις
 }
 
-export function MenuItemForm({ open, onOpenChange, onSave, onDelete, editItem, isMobile = false }: MenuItemFormProps) {
+export function MenuItemForm({ open, onOpenChange, onSave, onDelete, editItem, isMobile = false, categories = [] }: MenuItemFormProps) {
   const [name, setName] = useState('');
   const [category, setCategory] = useState<OrderCategory>('Κρύα');
   const [price, setPrice] = useState('');
@@ -160,16 +155,20 @@ export function MenuItemForm({ open, onOpenChange, onSave, onDelete, editItem, i
         <label className="text-sm font-medium">
           Κατηγορία <span className="text-red-500">*</span>
         </label>
-        <Select value={category} onValueChange={(value) => setCategory(value as OrderCategory)}>
-          <SelectTrigger className="h-12">
-            <SelectValue placeholder="Κατηγορία" />
-          </SelectTrigger>
-          <SelectContent>
-            {(Object.keys(CATEGORY_LABELS) as OrderCategory[]).map((cat) => (
-              <SelectItem key={cat} value={cat}>{CATEGORY_LABELS[cat]}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Free text με προτεινόμενες τιμές από τις υπάρχουσες κατηγορίες (datalist) */}
+        <Input
+          value={category}
+          onChange={(e) => setCategory(e.target.value as OrderCategory)}
+          list="category-suggestions"
+          placeholder="π.χ. Ορεκτικά"
+          className="h-12"
+          aria-required="true"
+        />
+        <datalist id="category-suggestions">
+          {categories.map((cat) => (
+            <option key={cat} value={cat} />
+          ))}
+        </datalist>
       </div>
 
       <div className="space-y-2">

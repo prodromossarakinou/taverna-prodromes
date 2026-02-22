@@ -5,13 +5,8 @@ import { PackageOpen, Plus, Search, Settings, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/Select';
+// Σημείωση: Προσωρινά χρησιμοποιούμε native <select> αντί για Radix Select
+// για να αποφύγουμε πιθανό runtime ασυμβατό που εμποδίζει το άνοιγμα του Admin View.
 import { useOrders } from '@/contexts/OrderContext';
 import { MenuItem, OrderCategory } from '@/types/order';
 import { MenuItemCard } from './MenuItemCard';
@@ -175,43 +170,40 @@ export function AdminView({ onSwitchView, ThemeToggle }: AdminViewProps) {
 
         <div className="mt-4 flex flex-wrap gap-2 items-center">
           <div className="w-[200px]">
-            <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as OrderCategory | 'all')}>
-              <SelectTrigger>
-                <SelectValue placeholder="Κατηγορία" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Όλες</SelectItem>
-                {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <select
+              className="h-9 w-full rounded-md border bg-input-background px-3 text-sm text-gray-900 dark:text-gray-100 dark:bg-gray-900 dark:border-gray-700"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value as OrderCategory | 'all')}
+            >
+              <option value="all">Όλες</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
           </div>
           <div className="w-[150px]">
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'active' | 'inactive')}>
-              <SelectTrigger>
-                <SelectValue placeholder="Κατάσταση" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Όλες</SelectItem>
-                <SelectItem value="active">Ενεργά</SelectItem>
-                <SelectItem value="inactive">Ανενεργά</SelectItem>
-              </SelectContent>
-            </Select>
+            <select
+              className="h-9 w-full rounded-md border bg-input-background px-3 text-sm text-gray-900 dark:text-gray-100 dark:bg-gray-900 dark:border-gray-700"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
+            >
+              <option value="all">Όλες</option>
+              <option value="active">Ενεργά</option>
+              <option value="inactive">Ανενεργά</option>
+            </select>
           </div>
           <div className="w-[180px]">
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Ταξινόμηση" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="name-asc">Όνομα (Α-Ω)</SelectItem>
-                <SelectItem value="name-desc">Όνομα (Ω-Α)</SelectItem>
-                <SelectItem value="price-asc">Τιμή (↑)</SelectItem>
-                <SelectItem value="price-desc">Τιμή (↓)</SelectItem>
-                <SelectItem value="category">Κατηγορία</SelectItem>
-              </SelectContent>
-            </Select>
+            <select
+              className="h-9 w-full rounded-md border bg-input-background px-3 text-sm text-gray-900 dark:text-gray-100 dark:bg-gray-900 dark:border-gray-700"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortOption)}
+            >
+              <option value="name-asc">Όνομα (Α-Ω)</option>
+              <option value="name-desc">Όνομα (Ω-Α)</option>
+              <option value="price-asc">Τιμή (↑)</option>
+              <option value="price-desc">Τιμή (↓)</option>
+              <option value="category">Κατηγορία</option>
+            </select>
           </div>
           {hasActiveFilters ? (
             <Button variant="outline" onClick={clearFilters}>Καθαρισμός Φίλτρων</Button>
@@ -280,6 +272,7 @@ export function AdminView({ onSwitchView, ThemeToggle }: AdminViewProps) {
         onSave={handleSave}
         onDelete={editingItem ? handleDelete : undefined}
         editItem={editingItem}
+        categories={categories}
         isMobile={isMobile}
       />
     </div>
