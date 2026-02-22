@@ -17,13 +17,7 @@ import { MenuItem, OrderCategory } from '@/types/order';
 import { MenuItemCard } from './MenuItemCard';
 import { MenuItemForm } from './MenuItemForm';
 
-const CATEGORY_LABELS: Record<OrderCategory, string> = {
-  'Κρύα': 'Κρύα Κουζίνα/Σαλάτες',
-  'Ζεστές': 'Ζεστές Σαλάτες',
-  'Ψησταριά': 'Ψησταριά',
-  'Μαγειρευτό': 'Μαγειρευτό',
-  'Ποτά': 'Αναψυκτικά/Ποτά',
-};
+// Δυναμικές κατηγορίες (παράγονται από τα Menu Items)
 
 type SortOption = 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'category';
 
@@ -51,14 +45,23 @@ export function AdminView({ onSwitchView, ThemeToggle }: AdminViewProps) {
 
   const hasActiveFilters = Boolean(searchQuery.trim()) || categoryFilter !== 'all' || statusFilter !== 'all' || sortBy !== 'name-asc';
 
+  // Εξαγωγή μοναδικών κατηγοριών από τα τρέχοντα menu items (ενεργά/ανενεργά)
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    for (const it of menuItems) {
+      if (it.category) set.add(it.category);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'el')) as OrderCategory[];
+  }, [menuItems]);
+
   const filteredAndSortedItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     let items = menuItems.filter((item) => {
       if (!query) return true;
-      const categoryLabel = CATEGORY_LABELS[item.category].toLowerCase();
+      const categoryValue = (item.category ?? '').toLowerCase();
       return (
         item.name.toLowerCase().includes(query) ||
-        categoryLabel.includes(query) ||
+        categoryValue.includes(query) ||
         (item.extraNotes ?? '').toLowerCase().includes(query)
       );
     });
@@ -178,8 +181,8 @@ export function AdminView({ onSwitchView, ThemeToggle }: AdminViewProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Όλες</SelectItem>
-                {(Object.keys(CATEGORY_LABELS) as OrderCategory[]).map((cat) => (
-                  <SelectItem key={cat} value={cat}>{CATEGORY_LABELS[cat]}</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -222,7 +225,7 @@ export function AdminView({ onSwitchView, ThemeToggle }: AdminViewProps) {
           </span>
           {categoryFilter !== 'all' ? (
             <Badge className="flex items-center gap-1">
-              {CATEGORY_LABELS[categoryFilter]}
+              {categoryFilter}
               <button
                 type="button"
                 onClick={() => setCategoryFilter('all')}

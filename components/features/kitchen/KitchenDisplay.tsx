@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/Button';
 import { Popup } from '@/components/ui/Popup';
 import { ScrollArea } from '@/components/ui/ScrollArea';
 import { cn } from '@/components/ui/utils';
+import { BillTotals } from '@/components/features/billing/BillTotals';
+import type { Bill } from '@/types/bill';
 import {
   DEFAULT_KITCHEN_FILTERS,
   KITCHEN_FILTER_KEYS,
@@ -19,13 +21,7 @@ import {
 
 const FILTER_STORAGE_KEY = 'kitchen-status-filters';
 
-const CATEGORY_LABELS: Record<OrderCategory, string> = {
-  'Κρύα': 'ΚΡΥΑ ΚΟΥΖΙΝΑ',
-  'Ζεστές': 'ΖΕΣΤΕΣ ΣΑΛΑΤΕΣ',
-  'Ψησταριά': 'ΨΗΣΤΑΡΙΑ',
-  'Μαγειρευτό': 'ΜΑΓΕΙΡΕΥΤΟ',
-  'Ποτά': 'ΠΟΤΑ',
-};
+// Κατηγορίες: παράγονται δυναμικά από τα Menu Items
 
 interface KitchenDisplayProps {
   onSwitchView: (view: 'waiter' | 'kitchen' | 'admin') => void;
@@ -47,6 +43,7 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
   // Bill popup state (Kitchen)
   const [billOpen, setBillOpen] = useState(false);
   const [selectedBillTable, setSelectedBillTable] = useState<string | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [billLoading, setBillLoading] = useState(false);
   const [billError, setBillError] = useState<string | null>(null);
   const [billData, setBillData] = useState<{
@@ -55,10 +52,25 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
     totals: { baseTotal: number; extrasTotal: number; grandTotal: number };
     missingPriceItemIds: string[];
   } | null>(null);
+  // Τελικό σύνολο όπως προκύπτει μετά την έκπτωση (ενημερώνεται από BillTotals)
+  const [billComputedTotal, setBillComputedTotal] = useState<number | null>(null);
+  const [billDiscount, setBillDiscount] = useState<{ type: 'percent' | 'amount'; value: number } | null>(null);
+  // Υπάρχον λογαριασμός (αν υπάρχει για το τραπέζι)
+  const [existingBill, setExistingBill] = useState<Bill | null>(null);
+  // Panel για αφαίρεση items από τον υπολογισμό (UI-only προς το παρόν)
+  const [removePanelOpen, setRemovePanelOpen] = useState(false);
+  const [removedKeys, setRemovedKeys] = useState<Set<string>>(new Set());
   const [statusFilters, setStatusFilters] = useState<Record<KitchenOrderFilterKey, boolean>>({
     ...DEFAULT_KITCHEN_FILTERS,
   });
   const [selectedCategory, setSelectedCategory] = useState<OrderCategory | 'all'>('all');
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    for (const m of menuItems) {
+      if (m.active !== false && m.category) set.add(m.category);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'el')) as OrderCategory[];
+  }, [menuItems]);
   const [pendingUpdates, setPendingUpdates] = useState(0);
   const [isApplyingUpdates, setIsApplyingUpdates] = useState(false);
   const mappedOrders = useMemo(
@@ -201,16 +213,18 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
       const related = orders.filter((o) => o.tableNumber === table);
       const baseOrders = related.filter((o) => !o.isExtra && !o.parentId);
       const extraOrders = related.filter((o) => o.isExtra === true || Boolean(o.parentId));
-
-      const priceById = new Map(menuItems.map((m) => [m.id, m.price]));
       const missing: string[] = [];
 
       const calcSection = (sectionOrders: typeof orders) => {
         let total = 0;
         for (const o of sectionOrders) {
           for (const it of o.items) {
-            const p = priceById.get(it.id);
-            if (typeof p !== 'number' || !Number.isFinite(p)) {
+            // Resolve price by name+category (fallback to name) — order items don't carry menu.id
+            const match =
+              menuItems.find((m) => m.name === it.name && m.category === it.category) ||
+              menuItems.find((m) => m.name === it.name);
+            const p = match?.price;
+            if (typeof p !== 'number' || !Number.isFinite(p as number)) {
               missing.push(`${o.id}:${it.id}`);
               total += 0;
             } else {
@@ -236,10 +250,25 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
         totals: { baseTotal, extrasTotal, grandTotal },
         missingPriceItemIds: missing,
       });
+      // reset τυχόν αφαιρέσεις όταν αλλάζει τραπέζι
+      setRemovedKeys(new Set());
     } catch (error: any) {
       setBillError(error?.message ?? 'Σφάλμα υπολογισμού');
     } finally {
       setBillLoading(false);
+    }
+  };
+
+  // Αναζητά υπάρχον ανοιχτό bill για το επιλεγμένο τραπέζι
+  const fetchExistingBill = async (table: string | null) => {
+    try {
+      if (!table) { setExistingBill(null); return; }
+      const res = await fetch(`/api/bills?table=${encodeURIComponent(table)}&status=open`);
+      if (!res.ok) { setExistingBill(null); return; }
+      const bills: Bill[] = await res.json();
+      setExistingBill(bills && bills.length > 0 ? bills[0] : null);
+    } catch {
+      setExistingBill(null);
     }
   };
 
@@ -254,8 +283,131 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
     setStatusFilters({ ...DEFAULT_KITCHEN_FILTERS });
   };
 
-  const handleItemClick = (orderId: string, itemId: string) => {
-    updateItemStatus(orderId, itemId);
+  const handleItemClick = async (orderId: string, itemId: string): Promise<void> => {
+    await updateItemStatus(orderId, itemId);
+  };
+
+  // Όταν αλλάζει το billData, ορίσε αρχικό computed total = grandTotal (χωρίς έκπτωση)
+  useEffect(() => {
+    if (billData) {
+      setBillComputedTotal(billData.totals.grandTotal);
+    } else {
+      setBillComputedTotal(null);
+    }
+  }, [billData]);
+
+  // Όποτε αλλάζει το επιλεγμένο τραπέζι, έλεγξε εάν υπάρχει ήδη λογαριασμός
+  useEffect(() => {
+    void fetchExistingBill(selectedBillTable);
+  }, [selectedBillTable]);
+
+  // Προσαρμοσμένα σύνολα με βάση τα items που έχουν επιλεγεί για αφαίρεση (UI only)
+  const adjustedTotals = useMemo(() => {
+    if (!billData) return null as null | { baseTotal: number; extrasTotal: number };
+    let removedBase = 0;
+    let removedExtras = 0;
+    const priceOf = (name: string, category?: string | null) => {
+      const match =
+        menuItems.find(m => m.name === name && m.category === (category ?? m.category)) ||
+        menuItems.find(m => m.name === name);
+      return typeof match?.price === 'number' && Number.isFinite(match.price) ? (match.price as number) : 0;
+    };
+    for (const o of billData.baseOrders) {
+      for (const it of o.items) {
+        const key = `${o.id}:${it.id}`;
+        if (removedKeys.has(key)) {
+          removedBase += (it.quantity ?? 0) * priceOf(it.name, it.category);
+        }
+      }
+    }
+    for (const o of billData.extraOrders) {
+      for (const it of o.items) {
+        const key = `${o.id}:${it.id}`;
+        if (removedKeys.has(key)) {
+          removedExtras += (it.quantity ?? 0) * priceOf(it.name, it.category);
+        }
+      }
+    }
+    return {
+      baseTotal: Math.max(0, billData.totals.baseTotal - removedBase),
+      extrasTotal: Math.max(0, billData.totals.extrasTotal - removedExtras),
+    };
+  }, [billData, removedKeys, menuItems]);
+
+  // Δημιουργία ή ενημέρωση λογαριασμού, ανάλογα με το εάν υπάρχει
+  const handleCreateOrUpdateBill = async () => {
+    if (!selectedBillTable || !billData) return;
+    try {
+      const baseOrderIds = billData.baseOrders.map(o => o.id);
+      const extraOrderIds = billData.extraOrders.map(o => o.id);
+      const waiterName = billData.baseOrders[0]?.waiterName ?? billData.extraOrders[0]?.waiterName ?? null;
+
+      if (existingBill) {
+        // Ενημέρωση (PATCH) έκπτωσης/συνόλων στο υπάρχον bill
+        const payload: any = {};
+        // Αντιστοίχιση των τρεχουσών παραγγελιών, ώστε να μπουν τυχόν νέα extras
+        payload.baseOrderIds = baseOrderIds;
+        payload.extraOrderIds = extraOrderIds;
+        if (billDiscount && billDiscount.value > 0) {
+          payload.discount = { type: billDiscount.type, value: billDiscount.value };
+        } else {
+          // Μηδενισμός έκπτωσης αν είχε πριν
+          payload.discount = { type: 'amount', value: 0 };
+        }
+        const res = await fetch(`/api/bills/${existingBill.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('Failed to update bill');
+        const updated: Bill = await res.json();
+        setExistingBill(updated);
+        // Προαιρετικό feedback
+        console.log('Bill updated:', updated);
+        return;
+      }
+
+      // Δημιουργία νέου (POST)
+      const payload: any = {
+        tableNumber: selectedBillTable,
+        waiterName,
+        baseOrderIds,
+        extraOrderIds,
+      };
+      if (billDiscount && billDiscount.value > 0) {
+        payload.discount = { type: billDiscount.type, value: billDiscount.value };
+      }
+      const res = await fetch('/api/bills', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (!res.ok) {
+        if (res.status === 409) {
+          const data = await res.json().catch(() => ({}));
+          const id = data?.billId ? ` (ID: ${data.billId})` : '';
+          if (typeof window !== 'undefined') {
+            window.alert(`Υπάρχει ήδη λογαριασμός για αυτό το τραπέζι/παραγγελίες${id}. Επιτρέπεται μόνο επεξεργασία.`);
+          }
+          await fetchExistingBill(selectedBillTable);
+          return;
+        }
+        throw new Error('Failed to create bill');
+      }
+      const created: Bill = await res.json();
+      setExistingBill(created);
+      console.log('Bill created:', created);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Εκτύπωση λογαριασμού σε PDF (server-side PDF)
+  const handlePrintBill = async () => {
+    if (!existingBill) return;
+    try {
+      const url = `/api/bills/${existingBill.id}/print`;
+      // Άνοιγμα νέου tab κατευθείαν στο PDF endpoint
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (e) {
+      console.error('Print failed:', e);
+    }
   };
 
   return (
@@ -269,10 +421,17 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
         onFilterReset={handleFilterReset}
         selectedCategory={selectedCategory}
         onCategoryChange={setSelectedCategory}
-        categoryLabels={CATEGORY_LABELS}
+        categories={categories}
         onSwitchView={onSwitchView}
         ThemeToggle={ThemeToggle}
         onOpenBill={() => setBillOpen(true)}
+        onOpenMenu={() => {
+          try {
+            window.open('/api/menu/print', '_blank', 'noopener,noreferrer');
+          } catch (e) {
+            console.error('Open live menu failed:', e);
+          }
+        }}
       />
 
       <div className="p-4">
@@ -320,9 +479,9 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
       <Popup
         open={billOpen}
         title="Λογαριασμός"
-        onClose={() => { setBillOpen(false); setSelectedBillTable(null); setBillData(null); setBillError(null); }}
+        onClose={() => { setBillOpen(false); setSelectedBillTable(null); setBillData(null); setBillError(null); setBillComputedTotal(null); setBillDiscount(null); }}
         onConfirm={() => setBillOpen(false)}
-        confirmText="Κλείσιμο"
+        confirmText={billData ? `Κλείσιμο • €${(billComputedTotal ?? billData.totals.grandTotal).toFixed(2)}` : 'Κλείσιμο'}
       >
         <div className="flex flex-col gap-3 text-sm max-h-[70vh]">
           {/* Header / Instructions */}
@@ -330,19 +489,54 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
             Επιλέξτε τραπέζι για υπολογισμό λογαριασμού. Θα εμφανιστεί αναλυτική ανάλυση (βάση + extras) και σύνολα.
           </div>
 
-          {/* Table Picker */}
+          {/* Table/Orders Picker */}
           <div className="rounded-lg border bg-card text-card-foreground">
-            <div className="px-3 py-2 border-b text-xs font-semibold opacity-80">Ενεργά Τραπέζια</div>
+            <div className="px-3 py-2 border-b text-xs font-semibold opacity-80 flex items-center justify-between">
+              <span>{selectedOrderId ? 'Επιλεγμένη Παραγγελία' : 'Ενεργά Τραπέζια'}</span>
+              <button
+                type="button"
+                onClick={() => { setSelectedOrderId(null); setSelectedBillTable(null); setBillData(null); }}
+                className={cn(
+                  'text-xs underline opacity-80 hover:opacity-100 transition-colors',
+                  selectedOrderId ? 'visible' : 'opacity-60'
+                )}
+                title="Επιστροφή στα τραπέζια"
+              >
+                Ενεργά τραπέζια
+              </button>
+            </div>
             <ScrollArea className="max-h-40">
               <div className="p-2 space-y-1">
                 {(() => {
                   const OPEN_STATUSES_EXCLUDE = new Set(['completed', 'cancelled']);
                   const openOrders = orders.filter((o) => !OPEN_STATUSES_EXCLUDE.has((o.status as string) ?? ''));
-                  const byTable = new Map<string, { count: number; hasExtras: boolean }>();
+
+                  if (!orders.length) {
+                    return <div className="text-center py-4 text-muted-foreground">Φόρτωση...</div>;
+                  }
+
+                  if (selectedOrderId) {
+                    const order = orders.find(o => o.id === selectedOrderId);
+                    if (!order) {
+                      return <div className="text-center py-4 text-muted-foreground">Η παραγγελία δεν βρέθηκε</div>;
+                    }
+                    return (
+                      <div className="space-y-1">
+                        <div className="px-3 py-2 text-sm">
+                          <div className="font-semibold">Τραπέζι {order.tableNumber}</div>
+                          <div className="text-xs opacity-80">{order.waiterName}</div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Λίστα τραπεζιών και παραγγελιών: κλικ σε ΤΡΑΠΕΖΙ -> βλέπεις τις παραγγελίες του, κλικ σε ΠΑΡΑΓΓΕΛΙΑ -> δείχνει λογαριασμό για αυτό το τραπέζι
+                  const byTable = new Map<string, { orders: typeof orders }>();
                   for (const o of openOrders) {
                     const key = o.tableNumber;
-                    const prev = byTable.get(key) ?? { count: 0, hasExtras: false };
-                    byTable.set(key, { count: prev.count + 1, hasExtras: prev.hasExtras || Boolean(o.isExtra) });
+                    const prev = byTable.get(key) ?? { orders: [] as typeof orders };
+                    prev.orders.push(o);
+                    byTable.set(key, prev);
                   }
                   const entries = Array.from(byTable.entries()).sort((a, b) => {
                     const an = parseInt(a[0], 10);
@@ -351,37 +545,48 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
                     return a[0].localeCompare(b[0], 'el');
                   });
 
-                  if (!orders.length) {
-                    return (
-                      <div className="text-center py-4 text-muted-foreground">Φόρτωση...</div>
-                    );
-                  }
-
                   if (entries.length === 0) {
-                    return (
-                      <div className="text-center py-4 text-muted-foreground">Δεν υπάρχουν ενεργά τραπέζια</div>
-                    );
+                    return <div className="text-center py-4 text-muted-foreground">Δεν υπάρχουν ενεργά τραπέζια</div>;
                   }
 
-                  return entries.map(([table, info]) => (
-                    <button
-                      key={table}
-                      type="button"
-                      onClick={() => { setSelectedBillTable(table); buildBill(table); }}
-                      className={cn(
-                        'w-full text-left px-3 py-2 rounded-md border transition-all',
-                        selectedBillTable === table
-                          ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-500/10 dark:border-blue-500/60 dark:text-blue-300'
-                          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
-                      )}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="font-semibold">Τραπέζι {table}</div>
-                        <div className="text-xs opacity-80">
-                          {info.count} παραγγ. {info.hasExtras ? '• + extras' : ''}
-                        </div>
+                  return entries.map(([table, data]) => (
+                    <div key={table} className="rounded-md border p-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedOrderId(null); setSelectedBillTable(table); buildBill(table); }}
+                        className={cn(
+                          'w-full text-left px-2 py-1 rounded-md transition-colors font-semibold select-none hover:bg-accent/50 cursor-pointer',
+                          selectedBillTable === table ? 'text-blue-700 dark:text-blue-300' : 'text-foreground'
+                        )}
+                        title={`Υπολογισμός λογαριασμού για το τραπέζι ${table}`}
+                      >
+                        Τραπέζι {table}
+                      </button>
+                      <div className="mt-1 grid grid-cols-2 gap-1">
+                        {data.orders.map((o) => {
+                          const time = new Date(o.timestamp).toLocaleTimeString('el-GR', { hour: '2-digit', minute: '2-digit', hour12: false });
+                          const isExtra = o.isExtra === true;
+                          return (
+                            <button
+                              key={o.id}
+                              type="button"
+                              onClick={() => { setSelectedOrderId(o.id); setSelectedBillTable(o.tableNumber); buildBill(o.tableNumber); }}
+                              className={cn(
+                                'text-left text-xs px-2 py-1 rounded-md border bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-1',
+                                isExtra && 'ring-1 ring-orange-400/60 dark:ring-orange-400/40'
+                              )}
+                              title={isExtra ? 'EXTRA' : 'ORDER'}
+                            >
+                              <span className={cn('font-semibold', isExtra ? 'text-orange-600 dark:text-orange-300' : 'text-foreground')}>#{o.id.slice(0, 4)}</span>
+                              <span className="opacity-70">• {time}</span>
+                              {isExtra && (
+                                <span className="ml-auto text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300">extra</span>
+                              )}
+                            </button>
+                          );
+                        })}
                       </div>
-                    </button>
+                    </div>
                   ));
                 })()}
               </div>
@@ -398,83 +603,120 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
             )}
             {!billLoading && !billError && selectedBillTable && billData && (
               <>
-                <ScrollArea className="max-h-60 rounded-md border bg-card">
-                  <div className="p-3 space-y-4 pb-24">
-                    {/* Base Orders (πάνω) */}
-                    <div>
-                      <div className="text-xs font-bold uppercase opacity-80 mb-2">BASE ORDER</div>
-                      <div className="space-y-1">
-                        {billData.baseOrders.flatMap((o) =>
-                          o.items.map((it) => {
-                            const menu = menuItems.find((m) => m.id === it.id);
-                            const price = menu?.price;
-                            const hasPrice = typeof price === 'number' && Number.isFinite(price);
-                            const lineTotal = (it.quantity ?? 0) * (hasPrice ? (price as number) : 0);
-                            return (
-                              <div key={`${o.id}-${it.id}`} className="flex items-center justify-between text-sm px-2 py-1 rounded hover:bg-accent/50">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium">{it.quantity}× {it.name}</span>
-                                  {!hasPrice && (
+                <div className="p-3 pb-0">
+                  {/* ΒΑΣΗ: Λίστα αντικειμένων */}
+                  <div className="text-xs font-bold uppercase opacity-80">Βάση</div>
+                  {[...billData.baseOrders].flatMap((o) =>
+                      o.items.map((it) => {
+                        const menu =
+                            menuItems.find((m) => m.name === it.name && m.category === it.category) ||
+                            menuItems.find((m) => m.name === it.name);
+                        const price = menu?.price;
+                        const hasPrice = typeof price === 'number' && Number.isFinite(price);
+                        const lineTotal = (it.quantity ?? 0) * (hasPrice ? (price as number) : 0);
+                        return (
+                            <div key={`${o.id}-${it.id}`} className="flex items-center justify-between text-sm px-2 py-1 rounded hover:bg-accent/50">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{it.quantity}× {it.name}</span>
+                                {!hasPrice && (
                                     <span className="text-amber-600 dark:text-amber-300 text-[10px] font-bold uppercase">NO PRICE</span>
-                                  )}
-                                </div>
-                                <div className="font-semibold">€{lineTotal.toFixed(2)}</div>
+                                )}
                               </div>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
+                              <div className="font-semibold">€{lineTotal.toFixed(2)}</div>
+                            </div>
+                        );
+                      })
+                  )}
 
-                    {/* Extras (κάτω) */}
-                    <div>
-                      <div className="text-xs font-bold uppercase opacity-80 mb-2">EXTRA</div>
-                      {billData.extraOrders.length === 0 ? (
-                        <div className="text-xs text-muted-foreground px-2">—</div>
-                      ) : (
-                        <div className="space-y-1">
-                          {billData.extraOrders.flatMap((o) =>
-                            o.items.map((it) => {
-                              const menu = menuItems.find((m) => m.id === it.id);
-                              const price = menu?.price;
-                              const hasPrice = typeof price === 'number' && Number.isFinite(price);
-                              const lineTotal = (it.quantity ?? 0) * (hasPrice ? (price as number) : 0);
-                              return (
-                                <div key={`${o.id}-${it.id}`} className="flex items-center justify-between text-sm px-2 py-1 rounded hover:bg-accent/50">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-medium">{it.quantity}× {it.name}</span>
-                                    {!hasPrice && (
-                                      <span className="text-amber-600 dark:text-amber-300 text-[10px] font-bold uppercase">NO PRICE</span>
-                                    )}
-                                  </div>
-                                  <div className="font-semibold">€{lineTotal.toFixed(2)}</div>
+                  {/* EXTRA ανά παραγγελία: Header με ID/Ώρα/Waiter και λίστα προϊόντων */}
+                  {billData.extraOrders.length > 0 && (
+                      <div className="space-y-3">
+                        <div className="text-xs font-bold uppercase opacity-80">Extras ({billData.extraOrders.length})</div>
+                        {billData.extraOrders.map((extra) => {
+                          const extraTime = new Intl.DateTimeFormat('el-GR', {
+                            hour: '2-digit', minute: '2-digit', hour12: false,
+                          }).format(new Date(extra.timestamp));
+                          // Υπολογισμός συνόλου για το συγκεκριμένο EXTRA
+                          const extraTotal = extra.items.reduce((sum, it) => {
+                            const match =
+                              menuItems.find((m) => m.name === it.name && m.category === it.category) ||
+                              menuItems.find((m) => m.name === it.name);
+                            const p = match?.price;
+                            const has = typeof p === 'number' && Number.isFinite(p as number);
+                            return sum + (it.quantity ?? 0) * (has ? (p as number) : 0);
+                          }, 0);
+                          return (
+                            <div key={extra.id} className="rounded-md border bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                              <div className="px-2 py-1 text-[11px] font-semibold uppercase opacity-80 flex items-center justify-between">
+                                <span>EXTRA • ID: {extra.id}</span>
+                                <span className="opacity-70 normal-case">{extra.waiterName} • {extraTime}</span>
+                              </div>
+                              <div className="p-1">
+                                {extra.items.map((it) => {
+                                  const menu =
+                                    menuItems.find((m) => m.name === it.name && m.category === it.category) ||
+                                    menuItems.find((m) => m.name === it.name);
+                                  const price = menu?.price;
+                                  const hasPrice = typeof price === 'number' && Number.isFinite(price);
+                                  const lineTotal = (it.quantity ?? 0) * (hasPrice ? (price as number) : 0);
+                                  return (
+                                    <div key={`${extra.id}-${it.id}`} className="flex items-center justify-between text-sm px-2 py-1 rounded hover:bg-accent/50">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium">{it.quantity}× {it.name}</span>
+                                        {!hasPrice && (
+                                          <span className="text-amber-600 dark:text-amber-300 text-[10px] font-bold uppercase">NO PRICE</span>
+                                        )}
+                                      </div>
+                                      <div className="font-semibold">€{lineTotal.toFixed(2)}</div>
+                                    </div>
+                                  );
+                                })}
+                                {/* Σύνολο για το συγκεκριμένο EXTRA */}
+                                <div className="h-px bg-border my-1" />
+                                <div className="flex items-center justify-between text-xs font-bold px-2 py-1">
+                                  <span className="opacity-80">Σύνολο EXTRA</span>
+                                  <span>€{extraTotal.toFixed(2)}</span>
                                 </div>
-                              );
-                            })
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </ScrollArea>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                </div>
+                {/* Totals + Discount */}
+                <div className="relative z-10 mt-2 pointer-events-auto space-y-2">
+                  <BillTotals
+                    baseTotal={adjustedTotals?.baseTotal ?? billData.totals.baseTotal}
+                    extrasTotal={adjustedTotals?.extrasTotal ?? billData.totals.extrasTotal}
+                    onTotalChange={(total, ctx) => {
+                      // Αποφυγή infinite re-render: ενημερώνουμε state μόνο όταν αλλάζει πραγματικά η τιμή
+                      setBillComputedTotal((prev) => (prev === total ? prev : total));
 
-                {/* Divider */}
-                <div className="h-px bg-border" />
-
-                {/* Totals */}
-                <div className="rounded-md border bg-card p-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="opacity-80">Base</span>
-                    <span className="font-semibold">€{billData.totals.baseTotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm mt-1">
-                    <span className="opacity-80">Extras</span>
-                    <span className="font-semibold">€{billData.totals.extrasTotal.toFixed(2)}</span>
-                  </div>
-                  <div className="h-px bg-border my-2" />
-                  <div className="flex items-center justify-between text-base font-bold">
-                    <span>Σύνολο</span>
-                    <span>€{billData.totals.grandTotal.toFixed(2)}</span>
+                      setBillDiscount((prev) => {
+                        const next = ctx.type ? { type: ctx.type as 'percent' | 'amount', value: ctx.discount } : null;
+                        if (
+                          (prev === null && next === null) ||
+                          (prev !== null && next !== null && prev.type === next.type && prev.value === next.value)
+                        ) {
+                          return prev; // καμία ουσιαστική αλλαγή
+                        }
+                        return next;
+                      });
+                    }}
+                  />
+                  <div className="flex items-center justify-between gap-2">
+                    {existingBill ? (
+                      <Button onClick={handlePrintBill} variant="secondary" className="h-9 px-4">
+                        Εκτύπωση
+                      </Button>
+                    ) : <span />}
+                    <Button onClick={handleCreateOrUpdateBill} className="h-9 px-4">
+                      {existingBill ? 'Ενημέρωση' : 'Δημιουργία Λογαριασμού'}
+                    </Button>
+                    <Button onClick={() => setRemovePanelOpen((v) => !v)} variant="outline" className="h-9 px-4">
+                      Αφαίρεση
+                    </Button>
                   </div>
                 </div>
               </>
@@ -482,6 +724,73 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
           </div>
         </div>
       </Popup>
-    </div>
-  );
-}
+      {/* Panel αφαίρεσης items */}
+      {billOpen && selectedBillTable && billData && removePanelOpen && (
+        <div className="fixed right-4 bottom-20 z-50 w-[320px] max-h-[60vh] overflow-auto rounded-lg border bg-white dark:bg-gray-900 shadow-xl">
+          <div className="px-3 py-2 border-b text-sm font-bold flex items-center justify-between">
+            <span>Αφαίρεση από λογαριασμό</span>
+            <button type="button" className="text-xs underline" onClick={() => setRemovePanelOpen(false)}>Κλείσιμο</button>
+          </div>
+          <div className="p-2 text-xs text-muted-foreground">Επίλεξε γραμμές που δεν θα χρεωθούν (μόνο στο UI προς το παρόν).</div>
+          <div className="p-2 space-y-2">
+            {/* Βάση */}
+            <div>
+              <div className="text-[11px] font-semibold uppercase opacity-80 mb-1">Βάση</div>
+              {[...billData.baseOrders].flatMap((o) =>
+                o.items.map((it) => {
+                  const key = `${o.id}:${it.id}`;
+                  const checked = removedKeys.has(key);
+                  return (
+                    <label key={key} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-accent/50">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => {
+                          setRemovedKeys(prev => {
+                            const next = new Set(prev);
+                            if (e.target.checked) next.add(key); else next.delete(key);
+                            return next;
+                          });
+                        }}
+                      />
+                      <span className="flex-1">{it.quantity}× {it.name}</span>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+            {/* Extras */}
+            {billData.extraOrders.length > 0 && (
+              <div>
+                <div className="text-[11px] font-semibold uppercase opacity-80 mb-1">Extras</div>
+                {billData.extraOrders.flatMap((o) =>
+                  o.items.map((it) => {
+                    const key = `${o.id}:${it.id}`;
+                    const checked = removedKeys.has(key);
+                    return (
+                      <label key={key} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-accent/50">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            setRemovedKeys(prev => {
+                              const next = new Set(prev);
+                              if (e.target.checked) next.add(key); else next.delete(key);
+                              return next;
+                            });
+                          }}
+                        />
+                        <span className="flex-1">{it.quantity}× {it.name}</span>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+            )}
+            <div className="pt-2 text-xs text-muted-foreground">Σημείωση: Η αφαίρεση εφαρμόζεται στα εμφανιζόμενα σύνολα. Αν θες μόνιμη εξαίρεση στα snapshots του Bill, ενημέρωσέ με να προσθέσω server-side υποστήριξη.</div>
+          </div>
+        </div>
+      )}
+      </div>
+    );
+    }

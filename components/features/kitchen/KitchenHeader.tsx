@@ -16,12 +16,14 @@ interface KitchenHeaderProps {
   onFilterReset: () => void;
   selectedCategory: OrderCategory | 'all';
   onCategoryChange: (category: OrderCategory | 'all') => void;
-  categoryLabels: Record<OrderCategory, string>;
+  categories: OrderCategory[];
   // View Switcher Props
   onSwitchView: (view: 'waiter' | 'kitchen' | 'admin') => void;
   ThemeToggle: React.ReactNode;
   // Bill Popup
   onOpenBill: () => void;
+  // Live Menu
+  onOpenMenu: () => void;
 }
 
 export function KitchenHeader({
@@ -33,14 +35,15 @@ export function KitchenHeader({
   onFilterReset,
   selectedCategory,
   onCategoryChange,
-  categoryLabels,
+  categories,
   onSwitchView,
   ThemeToggle,
   onOpenBill,
+  onOpenMenu,
 }: KitchenHeaderProps) {
   const categoryEntries: Array<[OrderCategory | 'all', string]> = [
     ['all', 'ΟΛΑ'],
-    ...Object.entries(categoryLabels),
+    ...categories.map((c) => [c, String(c)]) as Array<[OrderCategory, string]>,
   ];
 
   return (
@@ -55,6 +58,14 @@ export function KitchenHeader({
             className="h-9 px-4 bg-white/10 text-white border-white/20 hover:bg-white/15 font-bold uppercase"
           >
             Λογαριασμός
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onOpenMenu}
+            className="h-9 px-4 bg-white/10 text-white border-white/20 hover:bg-white/15 font-bold uppercase"
+          >
+            Μενού
           </Button>
           <h1 className="text-2xl font-bold">ΠΑΣΟ - {pendingCount} Παραγγελίες</h1>
         </div>

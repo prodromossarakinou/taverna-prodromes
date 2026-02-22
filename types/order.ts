@@ -1,4 +1,5 @@
-export type OrderCategory = 'Κρύα' | 'Ζεστές' | 'Ψησταριά' | 'Μαγειρευτό' | 'Ποτά';
+// Dynamic categories: allow any string so categories come from live menu items
+export type OrderCategory = string;
 
 export type ItemStatus = 'pending' | 'ready' | 'delivered';
 export type OrderStatus =
@@ -20,7 +21,7 @@ export interface MenuItem {
   id: string;
   name: string;
   category: OrderCategory;
-  price: number;
+  price: number | null;
   active: boolean;
   extraNotes?: string | null;
 }

@@ -7,13 +7,7 @@ import { OrderItemRow } from './OrderItemRow';
 import { cn } from '@/components/ui/utils';
 import { getOrderAccent, KitchenOrderStatus, normalizeOrderStatus } from './orderStatus';
 
-const CATEGORY_LABELS: Record<OrderCategory, string> = {
-  'Κρύα': 'ΚΡΥΑ ΚΟΥΖΙΝΑ',
-  'Ζεστές': 'ΖΕΣΤΕΣ ΣΑΛΑΤΕΣ',
-  'Ψησταριά': 'ΨΗΣΤΑΡΙΑ',
-  'Μαγειρευτό': 'ΜΑΓΕΙΡΕΥΤΟ',
-  'Ποτά': 'ΠΟΤΑ',
-};
+// Δυναμικές κατηγορίες: εμφανίζουμε την κατηγορία όπως έρχεται από τα Menu Items
 
 interface OrderCardProps {
   order: Order;
@@ -251,7 +245,7 @@ export function OrderCard({
         {Object.entries(groupedItems).map(([category, items]) => (
           <div key={category}>
             <div className="text-xs font-bold text-gray-600 dark:text-gray-400 mb-1 uppercase">
-              {CATEGORY_LABELS[category as OrderCategory] ?? category}
+              {String(category)}
             </div>
             <div className="space-y-1">
               {items.map((item) => (

@@ -1,4 +1,4 @@
-import { PrismaMenuRepository, PrismaOrderRepository } from './prisma';
+import { PrismaMenuRepository, PrismaOrderRepository, PrismaBillRepository } from './prisma';
 import { MockOrderRepository } from './mock';
 
 // Change this to 'prisma' to use the real database
@@ -9,3 +9,5 @@ export const menuRepository = new PrismaMenuRepository();
 export const orderRepository = REPO_TYPE === 'prisma' 
   ? new PrismaOrderRepository() 
   : new MockOrderRepository();
+
+export const billRepository = new PrismaBillRepository();

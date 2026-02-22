@@ -1,5 +1,7 @@
 import { MenuItem, Order, OrderStatus, ItemStatus, OrderCategory } from '@/types/order';
-import { IMenuRepository, IOrderRepository } from './interfaces';
+import { randomUUID } from 'crypto';
+import { Bill as BillType, CreateBillInput, UpdateBillInput } from '@/types/bill';
+import { IMenuRepository, IOrderRepository, IBillRepository } from './interfaces';
 import { prisma } from '../prisma';
 
 export class PrismaMenuRepository implements IMenuRepository {
@@ -14,6 +16,7 @@ export class PrismaMenuRepository implements IMenuRepository {
   async createMenuItem(item: Omit<MenuItem, 'id'>): Promise<MenuItem> {
     const created = await prisma.menuItem.create({
       data: {
+        id: randomUUID(),
         name: item.name,
         category: item.category,
         price: item.price ?? null,
@@ -340,5 +343,328 @@ export class PrismaOrderRepository implements IOrderRepository {
         })),
       })),
     };
+  }
+}
+
+export class PrismaBillRepository implements IBillRepository {
+  async createBill(input: CreateBillInput): Promise<BillType> {
+    const { tableNumber, waiterName, baseOrderIds, extraOrderIds, discount } = input;
+
+    // 1) Αποτροπή διπλής δημιουργίας λογαριασμού για τα ίδια orders
+    // Ελέγχουμε αν υπάρχει ήδη Bill που περιέχει οποιοδήποτε από τα δοθέντα orderIds
+    const existing = await prisma.bill.findFirst({
+      where: {
+        OR: [
+          { baseOrderIds: { hasSome: baseOrderIds } },
+          { extraOrderIds: { hasSome: baseOrderIds } },
+          { baseOrderIds: { hasSome: extraOrderIds } },
+          { extraOrderIds: { hasSome: extraOrderIds } },
+        ],
+      },
+      select: { id: true, status: true },
+    });
+
+    if (existing) {
+      const err: any = new Error('BILL_ALREADY_EXISTS');
+      err.code = 'BILL_ALREADY_EXISTS';
+      err.billId = existing.id;
+      err.status = existing.status;
+      throw err;
+    }
+
+    const [orders, menu] = await Promise.all([
+      prisma.order.findMany({
+        where: { id: { in: [...baseOrderIds, ...extraOrderIds] } },
+        include: { items: true },
+      }),
+      prisma.menuItem.findMany(),
+    ]);
+
+    const menuLookupByNameCat = (name: string, category: string | null | undefined) =>
+      menu.find(m => m.name === name && m.category === (category ?? m.category)) ||
+      menu.find(m => m.name === name) || null;
+
+    const baseSet = new Set(baseOrderIds);
+    const extraSet = new Set(extraOrderIds);
+
+    let subtotalBase = 0;
+    let subtotalExtras = 0;
+
+    const billItemsData = orders.flatMap(o => {
+      const isExtra = extraSet.has(o.id);
+      return o.items.map(it => {
+        const match = menuLookupByNameCat(it.name, it.category);
+        const unitPrice = match?.price ?? null;
+        const lineTotal = (it.quantity ?? 0) * (typeof unitPrice === 'number' ? unitPrice : 0);
+        if (isExtra) subtotalExtras += lineTotal; else subtotalBase += lineTotal;
+        return {
+          menuItemId: match?.id ?? null,
+          name: it.name,
+          category: it.category,
+          quantity: it.quantity,
+          unitPrice,
+          lineTotal,
+          orderId: o.id,
+          isExtra,
+        };
+      });
+    });
+
+    const discountValue = discount?.value && discount.value > 0 ? discount.value : 0;
+    const subtotal = subtotalBase + subtotalExtras;
+    const computedDiscount = discount && discount.type === 'percent'
+      ? Math.min(subtotal, (subtotal * discountValue) / 100)
+      : Math.min(subtotal, discountValue);
+    const grandTotal = Math.max(0, subtotal - computedDiscount);
+
+    const created = await prisma.bill.create({
+      data: {
+        tableNumber,
+        waiterName: waiterName ?? null,
+        baseOrderIds,
+        extraOrderIds,
+        subtotalBase,
+        subtotalExtras,
+        discountType: discount?.type ?? null,
+        discountValue: discount?.value ?? null,
+        grandTotal,
+        items: {
+          create: billItemsData,
+        },
+      },
+      include: { items: true },
+    });
+
+    return {
+      id: created.id,
+      tableNumber: created.tableNumber,
+      createdAt: created.createdAt.getTime(),
+      closedAt: created.closedAt ? created.closedAt.getTime() : null,
+      status: created.status as any,
+      waiterName: created.waiterName,
+      baseOrderIds: created.baseOrderIds,
+      extraOrderIds: created.extraOrderIds,
+      subtotalBase: created.subtotalBase,
+      subtotalExtras: created.subtotalExtras,
+      discountType: created.discountType as any,
+      discountValue: created.discountValue ?? null,
+      grandTotal: created.grandTotal,
+      items: created.items.map(it => ({
+        id: it.id,
+        billId: it.billId,
+        menuItemId: it.menuItemId,
+        name: it.name,
+        category: it.category,
+        quantity: it.quantity,
+        unitPrice: it.unitPrice,
+        lineTotal: it.lineTotal,
+        orderId: it.orderId,
+        isExtra: it.isExtra,
+      })),
+    };
+  }
+
+  async getBill(id: string): Promise<BillType> {
+    const bill = await prisma.bill.findUnique({ where: { id }, include: { items: true } });
+    if (!bill) throw new Error('Bill not found');
+    return {
+      id: bill.id,
+      tableNumber: bill.tableNumber,
+      createdAt: bill.createdAt.getTime(),
+      closedAt: bill.closedAt ? bill.closedAt.getTime() : null,
+      status: bill.status as any,
+      waiterName: bill.waiterName,
+      baseOrderIds: bill.baseOrderIds,
+      extraOrderIds: bill.extraOrderIds,
+      subtotalBase: bill.subtotalBase,
+      subtotalExtras: bill.subtotalExtras,
+      discountType: bill.discountType as any,
+      discountValue: bill.discountValue ?? null,
+      grandTotal: bill.grandTotal,
+      items: bill.items.map(it => ({
+        id: it.id,
+        billId: it.billId,
+        menuItemId: it.menuItemId,
+        name: it.name,
+        category: it.category,
+        quantity: it.quantity,
+        unitPrice: it.unitPrice,
+        lineTotal: it.lineTotal,
+        orderId: it.orderId,
+        isExtra: it.isExtra,
+      })),
+    };
+  }
+
+  async updateBill(id: string, input: UpdateBillInput): Promise<BillType> {
+    // Update bill:
+    // - status and/or discount
+    // - optionally refresh included orders (base/extra) and fully recalc items/subtotals
+    const bill = await prisma.bill.findUnique({ where: { id }, include: { items: true } });
+    if (!bill) throw new Error('Bill not found');
+
+    const patch: any = {};
+    if (input.status) patch.status = input.status;
+
+    // Determine if we need to refresh orders snapshot
+    const shouldRefreshOrders = Array.isArray(input.baseOrderIds) || Array.isArray(input.extraOrderIds);
+
+    let nextBaseOrderIds = bill.baseOrderIds;
+    let nextExtraOrderIds = bill.extraOrderIds;
+    if (Array.isArray(input.baseOrderIds)) nextBaseOrderIds = input.baseOrderIds;
+    if (Array.isArray(input.extraOrderIds)) nextExtraOrderIds = input.extraOrderIds;
+
+    let subtotalBase = bill.subtotalBase;
+    let subtotalExtras = bill.subtotalExtras;
+    let itemsData: Array<{
+      menuItemId: string | null;
+      name: string;
+      category: string;
+      quantity: number;
+      unitPrice: number | null;
+      lineTotal: number;
+      orderId: string | null;
+      isExtra: boolean;
+    }> | null = null;
+
+    if (shouldRefreshOrders) {
+      const [orders, menu] = await Promise.all([
+        prisma.order.findMany({
+          where: { id: { in: [...nextBaseOrderIds, ...nextExtraOrderIds] } },
+          include: { items: true },
+        }),
+        prisma.menuItem.findMany(),
+      ]);
+
+      const extraSet = new Set(nextExtraOrderIds);
+      subtotalBase = 0;
+      subtotalExtras = 0;
+
+      const menuLookupByNameCat = (name: string, category: string | null | undefined) =>
+        menu.find(m => m.name === name && m.category === (category ?? m.category)) ||
+        menu.find(m => m.name === name) || null;
+
+      itemsData = orders.flatMap(o => {
+        const isExtra = extraSet.has(o.id);
+        return o.items.map(it => {
+          const match = menuLookupByNameCat(it.name, it.category);
+          const unitPrice = match?.price ?? null;
+          const lineTotal = (it.quantity ?? 0) * (typeof unitPrice === 'number' ? unitPrice : 0);
+          if (isExtra) subtotalExtras += lineTotal; else subtotalBase += lineTotal;
+          return {
+            menuItemId: match?.id ?? null,
+            name: it.name,
+            category: it.category,
+            quantity: it.quantity,
+            unitPrice,
+            lineTotal,
+            orderId: o.id,
+            isExtra,
+          };
+        });
+      });
+      patch.baseOrderIds = nextBaseOrderIds;
+      patch.extraOrderIds = nextExtraOrderIds;
+      patch.subtotalBase = subtotalBase;
+      patch.subtotalExtras = subtotalExtras;
+    }
+
+    // Handle discount
+    let discountType = bill.discountType as any;
+    let discountValue = bill.discountValue ?? 0;
+    if (input.discount) {
+      discountType = input.discount.type;
+      discountValue = input.discount.value > 0 ? input.discount.value : 0;
+    }
+
+    // Recompute grandTotal if discount provided or orders refreshed
+    if (input.discount || shouldRefreshOrders) {
+      const subtotal = (shouldRefreshOrders ? subtotalBase + subtotalExtras : bill.subtotalBase + bill.subtotalExtras);
+      const computed = discountType === 'percent'
+        ? Math.min(subtotal, (subtotal * (discountValue || 0)) / 100)
+        : Math.min(subtotal, (discountValue || 0));
+      patch.discountType = discountType ?? null;
+      patch.discountValue = discountValue ?? null;
+      patch.grandTotal = Math.max(0, subtotal - computed);
+    }
+
+    // Apply changes in a transaction if we need to replace items
+    const result = await prisma.$transaction(async (tx) => {
+      if (itemsData) {
+        await tx.billItem.deleteMany({ where: { billId: id } });
+      }
+      const updated = await tx.bill.update({ where: { id }, data: patch, include: { items: true } });
+      if (itemsData) {
+        await tx.billItem.createMany({
+          data: itemsData.map(d => ({ ...d, billId: id })),
+        });
+      }
+      // fetch final state including new items
+      const final = await tx.bill.findUnique({ where: { id }, include: { items: true } });
+      if (!final) throw new Error('Bill not found');
+      return final;
+    });
+
+    return {
+      id: result.id,
+      tableNumber: result.tableNumber,
+      createdAt: result.createdAt.getTime(),
+      closedAt: result.closedAt ? result.closedAt.getTime() : null,
+      status: result.status as any,
+      waiterName: result.waiterName,
+      baseOrderIds: result.baseOrderIds,
+      extraOrderIds: result.extraOrderIds,
+      subtotalBase: result.subtotalBase,
+      subtotalExtras: result.subtotalExtras,
+      discountType: result.discountType as any,
+      discountValue: result.discountValue ?? null,
+      grandTotal: result.grandTotal,
+      items: result.items.map(it => ({
+        id: it.id,
+        billId: it.billId,
+        menuItemId: it.menuItemId,
+        name: it.name,
+        category: it.category,
+        quantity: it.quantity,
+        unitPrice: it.unitPrice,
+        lineTotal: it.lineTotal,
+        orderId: it.orderId,
+        isExtra: it.isExtra,
+      })),
+    };
+  }
+
+  async listBills(params?: { table?: string; status?: string }): Promise<BillType[]> {
+    const where: any = {};
+    if (params?.table) where.tableNumber = params.table;
+    if (params?.status) where.status = params.status;
+    const bills = await prisma.bill.findMany({ where, orderBy: { createdAt: 'desc' }, include: { items: true } });
+    return bills.map(bill => ({
+      id: bill.id,
+      tableNumber: bill.tableNumber,
+      createdAt: bill.createdAt.getTime(),
+      closedAt: bill.closedAt ? bill.closedAt.getTime() : null,
+      status: bill.status as any,
+      waiterName: bill.waiterName,
+      baseOrderIds: bill.baseOrderIds,
+      extraOrderIds: bill.extraOrderIds,
+      subtotalBase: bill.subtotalBase,
+      subtotalExtras: bill.subtotalExtras,
+      discountType: bill.discountType as any,
+      discountValue: bill.discountValue ?? null,
+      grandTotal: bill.grandTotal,
+      items: bill.items.map(it => ({
+        id: it.id,
+        billId: it.billId,
+        menuItemId: it.menuItemId,
+        name: it.name,
+        category: it.category,
+        quantity: it.quantity,
+        unitPrice: it.unitPrice,
+        lineTotal: it.lineTotal,
+        orderId: it.orderId,
+        isExtra: it.isExtra,
+      })),
+    }));
   }
 }

@@ -13,6 +13,7 @@ import { MenuGrid } from './MenuGrid';
 import { OrderSummary } from './OrderSummary';
 import { ScrollArea } from '@/components/ui/ScrollArea';
 import { cn } from '@/components/ui/utils';
+import { BillTotals } from '@/components/features/billing/BillTotals';
 
 interface WaiterViewProps {
   params: WaiterParams;
@@ -445,85 +446,39 @@ export function WaiterView({
             )}
             {!billLoading && !billError && selectedBillTable && billData && (
               <>
-                <ScrollArea className="max-h-60 rounded-md border bg-card">
-                  <div className="p-3 space-y-4 pb-24">
-                    {/* Base Orders */}
-                    <div>
-                      <div className="text-xs font-bold uppercase opacity-80 mb-2">BASE ORDER</div>
-                      <div className="space-y-1">
-                        {billData.baseOrders.flatMap((o) =>
-                          o.items.map((it) => {
-                            const menu = menuItems.find((m) => m.id === it.id);
-                            const price = menu?.price;
-                            const hasPrice = typeof price === 'number' && Number.isFinite(price);
-                            const lineTotal = (it.quantity ?? 0) * (hasPrice ? (price as number) : 0);
-                            return (
-                              <div key={`${o.id}-${it.id}`} className="flex items-center justify-between text-sm px-2 py-1 rounded hover:bg-accent/50">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium">{it.quantity}× {it.name}</span>
-                                  {!hasPrice && (
-                                    <span className="text-amber-600 dark:text-amber-300 text-[10px] font-bold uppercase">NO PRICE</span>
-                                  )}
-                                </div>
-                                <div className="font-semibold">€{lineTotal.toFixed(2)}</div>
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Extras */}
-                    <div>
-                      <div className="text-xs font-bold uppercase opacity-80 mb-2">EXTRA</div>
-                      {billData.extraOrders.length === 0 ? (
-                        <div className="text-xs text-muted-foreground px-2">—</div>
-                      ) : (
-                        <div className="space-y-1">
-                          {billData.extraOrders.flatMap((o) =>
-                            o.items.map((it) => {
-                              const menu = menuItems.find((m) => m.id === it.id);
-                              const price = menu?.price;
-                              const hasPrice = typeof price === 'number' && Number.isFinite(price);
-                              const lineTotal = (it.quantity ?? 0) * (hasPrice ? (price as number) : 0);
-                              return (
-                                <div key={`${o.id}-${it.id}`} className="flex items-center justify-between text-sm px-2 py-1 rounded hover:bg-accent/50">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-medium">{it.quantity}× {it.name}</span>
-                                    {!hasPrice && (
-                                      <span className="text-amber-600 dark:text-amber-300 text-[10px] font-bold uppercase">NO PRICE</span>
-                                    )}
-                                  </div>
-                                  <div className="font-semibold">€{lineTotal.toFixed(2)}</div>
-                                </div>
-                              );
-                            })
-                          )}
-                        </div>
-                      )}
-                    </div>
+                <ScrollArea className="max-h-[50vh] rounded-md border bg-card">
+                  <div className="p-3 space-y-4 pb-40">
+                    {/* Λίστα αντικειμένων: Πρώτα BASE, μετά EXTRA, χωρίς επικεφαλίδες */}
+                    {[...billData.baseOrders, ...billData.extraOrders].flatMap((o) =>
+                      o.items.map((it) => {
+                        const menu = menuItems.find((m) => m.id === it.id);
+                        const price = menu?.price;
+                        const hasPrice = typeof price === 'number' && Number.isFinite(price);
+                        const lineTotal = (it.quantity ?? 0) * (hasPrice ? (price as number) : 0);
+                        return (
+                          <div key={`${o.id}-${it.id}`} className="flex items-center justify-between text-sm px-2 py-1 rounded hover:bg-accent/50">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{it.quantity}× {it.name}</span>
+                              {!hasPrice && (
+                                <span className="text-amber-600 dark:text-amber-300 text-[10px] font-bold uppercase">NO PRICE</span>
+                              )}
+                            </div>
+                            <div className="font-semibold">€{lineTotal.toFixed(2)}</div>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </ScrollArea>
 
                 {/* Divider */}
-                <div className="h-px bg-border" />
+                <div className="h-px bg-border mt-2" />
 
-                {/* Totals (sticky) */}
-                <div className="rounded-md border bg-card p-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="opacity-80">Base</span>
-                    <span className="font-semibold">€{billData.totals.baseTotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm mt-1">
-                    <span className="opacity-80">Extras</span>
-                    <span className="font-semibold">€{billData.totals.extrasTotal.toFixed(2)}</span>
-                  </div>
-                  <div className="h-px bg-border my-2" />
-                  <div className="flex items-center justify-between text-base font-bold">
-                    <span>Σύνολο</span>
-                    <span>€{billData.totals.grandTotal.toFixed(2)}</span>
-                  </div>
-                </div>
+                {/* Totals + Discount */}
+                <BillTotals
+                  baseTotal={billData.totals.baseTotal}
+                  extrasTotal={billData.totals.extrasTotal}
+                />
               </>
             )}
           </div>

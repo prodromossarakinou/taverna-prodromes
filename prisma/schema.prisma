@@ -49,3 +49,44 @@ model OrderItemUnit {
 
   @@index([orderItemId])
 }
+
+// New billing models
+model Bill {
+  id             String      @id @default(cuid())
+  tableNumber    String
+  createdAt      DateTime    @default(now())
+  closedAt       DateTime?
+  status         String      @default("open") // open | closed | cancelled
+  waiterName     String?
+
+  // References for audit (orders included in this bill)
+  baseOrderIds   String[]
+  extraOrderIds  String[]
+
+  // Financials (snapshots at the time of creation)
+  subtotalBase    Float      @default(0)
+  subtotalExtras  Float      @default(0)
+  discountType    String?
+  discountValue   Float?
+  grandTotal      Float      @default(0)
+
+  items          BillItem[]
+}
+
+model BillItem {
+  id          String  @id @default(cuid())
+  billId      String
+  bill        Bill    @relation(fields: [billId], references: [id])
+
+  menuItemId  String?
+  name        String
+  category    String
+  quantity    Int
+  unitPrice   Float?
+  lineTotal   Float
+
+  orderId     String?
+  isExtra     Boolean @default(false)
+
+  @@index([billId])
+}
