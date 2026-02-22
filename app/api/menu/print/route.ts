@@ -28,7 +28,7 @@ export async function GET() {
     // Group by category
     const byCategory = new Map<string, typeof items>();
     for (const it of items) {
-      if (it.active === false) continue; // show only active
+      if (!it.active) continue; // show only active
       const key = it.category;
       const arr = byCategory.get(key) ?? [];
       arr.push(it);
@@ -81,7 +81,7 @@ export async function GET() {
     };
 
     // Header
-    draw('Ζωντανό Μενού', 20, margin, bold);
+    draw('Ταβέρνα "Ο Πρόδρομος"', 20, margin, bold);
     const ts = new Date().toLocaleString('el-GR');
     draw(`Ενημέρωση: ${ts}`, 10);
     line();
