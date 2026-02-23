@@ -1,6 +1,6 @@
 # Taverna Prodromes — Digital Ordering System
 
-Pilot Presentation (Internal)
+Pilot Presentation
 
 Owner: Prodromos Sarakinou  
 Challenge: 100 Days of Code  
@@ -209,7 +209,3 @@ Stable PDA operation
 - Analytics dashboard
 - Performance optimizations
 - Continued pilot testing
-
----
-
-Note: This presentation is PRIVATE. It must remain under `_private/` and is excluded from version control via `.gitignore`.
