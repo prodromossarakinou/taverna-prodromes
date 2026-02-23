@@ -1,129 +1,129 @@
 ### System Overview
 
-Το σύστημα είναι μια εφαρμογή Next.js (App Router) για διαχείριση παραγγελιών ταβέρνας με τρεις βασικές όψεις: Waiter (παραγγελιοληψία), Kitchen (εκτέλεση/παρακολούθηση και υπολογισμός λογαριασμού) και Admin (διαχείριση μενού). Περιλαμβάνει πλήρη ροή δημιουργίας/ενημέρωσης λογαριασμών, εξαγωγή PDF (λογαριασμών και live μενού) με σωστή απόδοση ελληνικών, και δυναμικές κατηγορίες που προκύπτουν από τα προϊόντα της βάσης.
+The system is a Next.js (App Router) application for taverna order management with three main surfaces: Waiter (order taking), Kitchen (execution/monitoring and bill calculation), and Admin (menu management). It includes a full flow for creating/updating bills, PDF export (bills and live menu) with correct Greek rendering, and dynamic categories derived from the products in the database.
 
-— React 19.2.3, Next.js 16.1.6 (App Router), Tailwind v4, Radix UI. DB μέσω Prisma (PostgreSQL).
+— React 19.2.3, Next.js 16.1.6 (App Router), Tailwind v4, Radix UI. DB via Prisma (PostgreSQL).
 
 ### Major Features Implemented
 
 #### Billing System
 - Bill creation
-  - Δημιουργία λογαριασμού μέσω `POST /api/bills` με `tableNumber`, `waiterName`, `baseOrderIds`, `extraOrderIds` και προαιρετική `discount`.
-  - Το snapshot του λογαριασμού υπολογίζεται από τα τρέχοντα `Order` και `MenuItem` (unitPrice, lineTotal, subtotalBase/Extras, grandTotal).
+  - Create a bill via `POST /api/bills` with `tableNumber`, `waiterName`, `baseOrderIds`, `extraOrderIds`, and optional `discount`.
+  - The bill snapshot is computed from the current `Order` and `MenuItem` data (unitPrice, lineTotal, subtotalBase/Extras, grandTotal).
 
 - Duplicate prevention (409)
-  - Πριν τη δημιουργία, γίνεται έλεγχος για υπάρχον `Bill` που περιλαμβάνει οποιοδήποτε από τα υποβληθέντα order IDs (base/extra). Αν βρεθεί, επιστρέφεται 409 με `billId`/`status`.
+  - Before creation, the system checks for an existing `Bill` that includes any of the submitted order IDs (base/extra). If found, it returns 409 with `billId`/`status`.
 
 - Bill update logic
-  - Το `PATCH /api/bills/:id` επιτρέπει ενημέρωση `status`/`discount` και, προαιρετικά, ανανέωση των `baseOrderIds`/`extraOrderIds` ώστε να συμπεριληφθούν νέα extras.
+  - `PATCH /api/bills/:id` allows updating `status`/`discount` and, optionally, refreshing `baseOrderIds`/`extraOrderIds` to include new extras.
 
 - BillItem recalculation
-  - Όταν στα `PATCH` δοθούν νέες `baseOrderIds`/`extraOrderIds`, γίνεται πλήρης ανα-υπολογισμός: διαγραφή παλιών `BillItem`, εκ νέου παραγωγή με βάση τα τρέχοντα orders + menu και ενημέρωση `subtotalBase`/`subtotalExtras`.
+  - When new `baseOrderIds`/`extraOrderIds` are provided in `PATCH`, a full recalculation is performed: delete old `BillItem`, regenerate based on current orders + menu, and update `subtotalBase`/`subtotalExtras`.
 
 - Discount application
-  - Υποστηρίζονται `percent` ή `amount`. Ο υπολογισμός κόβει πάντα στο πολύ το `subtotal`. `grandTotal = subtotal - computedDiscount`, ποτέ κάτω από 0.
+  - Supports `percent` or `amount`. The computed discount is always capped to at most the `subtotal`. `grandTotal = subtotal - computedDiscount`, never below 0.
 
 - Print endpoint
-  - `GET /api/bills/:id/print` δημιουργεί server-side PDF (Α4) του λογαριασμού με πίνακα γραμμών (Περιγραφή, Ποσ., Τιμή, Σύνολο) και σύνολα.
+  - `GET /api/bills/:id/print` generates a server-side PDF (A4) of the bill with a line table (Description, Qty, Price, Total) and totals.
 
 - Greek PDF rendering
-  - Ενσωμάτωση γραμματοσειρών Noto Sans (Regular/Bold) μέσω `pdf-lib` + `@pdf-lib/fontkit` για Unicode/ελληνικά. Τα bytes των TTF γίνεται fetch runtime και cache in-memory.
+  - Embed Noto Sans fonts (Regular/Bold) via `pdf-lib` + `@pdf-lib/fontkit` for Unicode/Greek. The TTF bytes are fetched at runtime and cached in-memory.
 
 - Non-fiscal disclaimer
-  - Στο PDF προσαρτάται σαφής αποποίηση ότι το έγγραφο δεν αποτελεί νόμιμο φορολογικό παραστατικό/απόδειξη.
+  - The PDF includes a clear disclaimer that the document is not a legal fiscal receipt/invoice.
 
 - UI removal panel behavior
-  - Στο Kitchen Bill popup υπάρχει panel «Αφαίρεση» για προσωρινή εξαίρεση γραμμών από τα εμφανιζόμενα σύνολα. Η αφαίρεση επηρεάζει ΜΟΝΟ την απεικόνιση (UI-only), όχι τη βάση.
+  - In the Kitchen Bill popup there is a "Remove" panel for temporarily excluding lines from the displayed totals. The removal affects ONLY the UI (display), not the database.
 
 #### Menu System
 - Menu PDF
-  - `GET /api/menu/print` για παραγωγή PDF του ζωντανού μενού (ομαδοποίηση ανά κατηγορία, ταξινόμηση, ελληνικά, αποποίηση).
+  - `GET /api/menu/print` generates a PDF of the live menu (grouped by category, sorted, Greek-capable, with disclaimer).
 
 - Menu replace endpoint
-  - `POST /api/menu/replace` για ολική αντικατάσταση μενού: hard delete όλων των `MenuItem` και εισαγωγή των νέων. Τα υπο-τμήματα (υποκατηγορίες) αποθηκεύονται στο `extraNotes`.
+  - `POST /api/menu/replace` performs a full menu replacement: hard delete all `MenuItem` entries and insert the new ones. Subsections (subcategories) are stored in `extraNotes`.
 
 - Dynamic categories
-  - Οι κατηγορίες παράγονται δυναμικά από τα `MenuItem` τόσο στο Kitchen όσο και στο Admin.
+  - Categories are generated dynamically from `MenuItem` both in Kitchen and Admin.
 
 - Removal of static lists
-  - Έχουν αφαιρεθεί οι στατικές λίστες/labels για κατηγορίες. Όπου υπήρχαν αναφορές, αντικαταστάθηκαν με δυναμικές τιμές.
+  - Static lists/labels for categories have been removed. Where references existed, they were replaced with dynamic values.
 
 - ExtraNotes usage for subcategories
-  - Οι υποκατηγορίες (π.χ. για Ποτά/Αναψυκτικά: Αναψυκτικά, Νερό, Ούζο, Ρετσίνα, Μπύρες, κ.λπ.) αποθηκεύονται στο `MenuItem.extraNotes` για εμφάνιση/αναφορά.
+  - Subcategories (e.g., for Drinks/Refreshments: Soft drinks, Water, Ouzo, Retsina, Beers, etc.) are stored in `MenuItem.extraNotes` for display/reference.
 
 #### Kitchen System
 - Dynamic categories
-  - Φίλτρα κατηγοριών και ομαδοποιήσεις βασίζονται στα τρέχοντα `MenuItem`.
+  - Category filters and groupings are based on the current `MenuItem`.
 
 - Bill button
-  - Κουμπί «Λογαριασμός» ανοίγει popup υπολογισμού: επιλογή τραπεζιού, εμφάνιση ανάλυσης βάσης/extras, χειρισμός έκπτωσης, δημιουργία/ενημέρωση Bill, εκτύπωση.
+  - A "Bill" button opens a calculation popup: select table, show base/extras breakdown, handle discount, create/update Bill, print.
 
 - Menu button
-  - Κουμπί «Μενού» ανοίγει το live menu PDF σε νέο tab.
+  - A "Menu" button opens the live menu PDF in a new tab.
 
 - Order visualization
-  - Κάρτες παραγγελιών με χρωματική σήμανση κατάστασης, ομαδοποίηση items ανά κατηγορία, granular status ανά μονάδα (`OrderItemUnit`).
+  - Order cards with status color coding, items grouped by category, granular per-unit status (`OrderItemUnit`).
 
 - Extras handling
-  - Τα extra orders αναγνωρίζονται (isExtra/parentId) και συμπεριλαμβάνονται σε ξεχωριστό subtotal στα bills.
+  - Extra orders are identified (isExtra/parentId) and included in a separate subtotal on bills.
 
 #### Admin
 - Dynamic category filtering
-  - Dropdown κατηγορίας βασισμένο στις μοναδικές κατηγορίες από τα `MenuItem` (ενεργά/ανενεργά), με πλήρη συνδυασμό φίλτρων/ταξινόμησης.
+  - Category dropdown is based on unique categories from `MenuItem` (active/inactive), with full combination of filters/sorting.
 
 - Removal of CATEGORY_LABELS
-  - Έχει αφαιρεθεί κάθε υπόλειμμα στατικού map κατηγοριών (π.χ. badge εμφάνιζε πλέον το δυναμικό string).
+  - All remnants of the static category map have been removed (e.g., badges now display the dynamic string).
 
 #### UI Infrastructure
 - ScrollArea fix
-  - Διορθώθηκαν τα Radix primitives: χρήση `Scrollbar`/`Thumb` αντί μη υπαρχουσών οντοτήτων. Εξάλειψη loop «Maximum update depth exceeded».
+  - Fixed Radix primitives: use `Scrollbar`/`Thumb` instead of non-existent entities. Eliminated the "Maximum update depth exceeded" loop.
 
 - Calendar stub
-  - Προσωρινό υποκατάστατο `components/ui/Calendar.tsx` ώστε να μην απαιτείται `react-day-picker` (ασύμβατο με React 19).
+  - Temporary substitute `components/ui/Calendar.tsx` so `react-day-picker` is not required (incompatible with React 19).
 
 - Removal of incompatible dependency
-  - Αφαιρέθηκε το `react-day-picker@8.x` λόγω peer conflict με React 19. Διατηρήθηκαν αλώβητες οι σχετικές οθόνες.
+  - Removed `react-day-picker@8.x` due to a peer conflict with React 19. Related screens remained intact.
 
 ---
 
 ### Architecture Snapshot
 
 #### Backend
-- Next.js API (App Router) με route handlers:
+- Next.js API (App Router) with route handlers:
   - Bills: `app/api/bills/route.ts` (GET list, POST create), `app/api/bills/[id]/route.ts` (GET one, PATCH update), `app/api/bills/[id]/print/route.ts` (GET PDF)
   - Menu: `app/api/menu/print/route.ts` (GET PDF), `app/api/menu/replace/route.ts` (POST replace)
 
 #### Database (Prisma models)
 - Bill
-  - Πεδία: `id`, `tableNumber`, χρονικά (`createdAt`, `closedAt`), `status` (open|closed|cancelled), `waiterName?`.
-  - Αναφορές σε orders ως arrays: `baseOrderIds`, `extraOrderIds` (χωρίς foreign keys).
-  - Οικονομικά snapshots: `subtotalBase`, `subtotalExtras`, `discountType?`, `discountValue?`, `grandTotal`.
-  - Σχέση: `items: BillItem[]`.
+  - Fields: `id`, `tableNumber`, timestamps (`createdAt`, `closedAt`), `status` (open|closed|cancelled), `waiterName?`.
+  - References to orders as arrays: `baseOrderIds`, `extraOrderIds` (no foreign keys).
+  - Financial snapshots: `subtotalBase`, `subtotalExtras`, `discountType?`, `discountValue?`, `grandTotal`.
+  - Relation: `items: BillItem[]`.
 
 - BillItem
-  - Γραμμή λογαριασμού συσχετισμένη με `Bill`.
-  - Πεδία: `menuItemId?`, `name`, `category`, `quantity`, `unitPrice?`, `lineTotal`, `orderId?`, `isExtra`.
+  - Bill line associated with `Bill`.
+  - Fields: `menuItemId?`, `name`, `category`, `quantity`, `unitPrice?`, `lineTotal`, `orderId?`, `isExtra`.
 
 - Order
-  - Πεδία: `id`, `tableNumber`, `waiterName`, `timestamp`, `status`, `extraNotes?`, `isExtra`, `parentId?`.
-  - Σχέση: `items: OrderItem[]`.
+  - Fields: `id`, `tableNumber`, `waiterName`, `timestamp`, `status`, `extraNotes?`, `isExtra`, `parentId?`.
+  - Relation: `items: OrderItem[]`.
 
 - OrderItem
-  - Πεδία: `id`, `name`, `quantity`, `category`, `itemStatus`, `extraNotes?`, `orderId`.
-  - Σχέση: `units: OrderItemUnit[]`.
+  - Fields: `id`, `name`, `quantity`, `category`, `itemStatus`, `extraNotes?`, `orderId`.
+  - Relation: `units: OrderItemUnit[]`.
 
 - OrderItemUnit
-  - Πεδία: `id`, `orderItemId`, `status`, `unitIndex`.
+  - Fields: `id`, `orderItemId`, `status`, `unitIndex`.
 
 - MenuItem
-  - Πεδία: `id`, `name`, `category`, `price?`, `extraNotes?`, `active`.
+  - Fields: `id`, `name`, `category`, `price?`, `extraNotes?`, `active`.
 
 #### Repositories
-- Υλοποίηση repository layer στο `lib/repositories/prisma.ts` που:
-  - Απομονώνει πρόσβαση στη DB για Menu/Orders/Bills.
-  - Για Bills: 
-    - `createBill` με duplicate prevention, snapshot/υπολογισμούς και γραμμές bill.
-    - `updateBill` με προαιρετική ανανέωση συμμετοχών orders και πλήρη επανυπολογισμό.
+- Repository layer implemented in `lib/repositories/prisma.ts` that:
+  - Isolates DB access for Menu/Orders/Bills.
+  - For Bills:
+    - `createBill` with duplicate prevention, snapshot/calculations, and bill lines.
+    - `updateBill` with optional refresh of participating orders and full recalculation.
     - `getBill`, `listBills`.
 
 ---
@@ -143,14 +143,14 @@
     }
     ```
   - 201 → `Bill`
-  - 409 → `{ error, billId, status }` αν υπάρχει ήδη bill με overlap orders
-  - 400/500 σε άκυρο payload/σφάλμα
+  - 409 → `{ error, billId, status }` if a bill already exists with overlapping orders
+  - 400/500 on invalid payload/error
 
 - GET `/api/bills?table=<table>&status=<status>`
-  - Επιστρέφει λίστα `Bill[]` με προαιρετικό φιλτράρισμα.
+  - Returns a list of `Bill[]` with optional filtering.
 
 - GET `/api/bills/:id`
-  - Επιστρέφει `Bill` (404 αν δεν βρεθεί).
+  - Returns a `Bill` (404 if not found).
 
 - PATCH `/api/bills/:id`
   - Body (όλα προαιρετικά):
@@ -162,25 +162,25 @@
       "extraOrderIds": ["string"]
     }
     ```
-  - Ενημερώνει status/έκπτωση και, αν δοθούν ids, ανανεώνει πλήρως τα items/σύνολα.
+  - Updates status/discount and, if IDs are provided, fully refreshes items/totals.
 
 - GET `/api/bills/:id/print`
-  - Επιστρέφει `application/pdf` (inline).
+  - Returns `application/pdf` (inline).
 
 #### Menu
 - GET `/api/menu/print`
-  - Επιστρέφει `application/pdf` με το ζωντανό μενού (μόνο ενεργά items).
+  - Returns `application/pdf` with the live menu (active items only).
 
 - POST `/api/menu/replace`
-  - Χωρίς body (τρέχουσα υλοποίηση). Διαγράφει όλα τα `MenuItem` και εισάγει τα προκαθορισμένα της τρέχουσας έκδοσης.
-  - Επιστρέφει περίληψη (π.χ. πόσα διέγραψε/πρόσθεσε) — βλ. server logs/υλοποίηση.
+  - No body (current implementation). Deletes all `MenuItem` entries and inserts the predefined items of the current version.
+  - Returns a summary (e.g., how many deleted/added) — see server logs/implementation.
 
 ---
 
 ### Known Limitations / Open Items
-- Build issue: χρήση `useSearchParams()` στη σελίδα `/` απαιτεί `<Suspense>` ή μεταφορά σε Client Component για επιτυχή `next build`.
-- Τα PDF φορτώνουν γραμματοσειρές Noto Sans με runtime fetch από GitHub (cache in-memory). Για πλήρη ανεξαρτησία, μπορούν να μεταφερθούν local (`public/fonts`).
-- Το panel «Αφαίρεση» στον λογαριασμό είναι UI-only (δεν αλλάζει το snapshot του Bill στη DB).
+- Build issue: using `useSearchParams()` on the `/` page requires `<Suspense>` or moving to a Client Component for a successful `next build`.
+- PDFs load Noto Sans fonts with runtime fetch from GitHub (in-memory cache). For full independence, they can be moved locally (`public/fonts`).
+- The "Remove" panel in the bill is UI-only (does not change the Bill snapshot in the DB).
 
 ---
 
