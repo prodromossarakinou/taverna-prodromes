@@ -79,9 +79,38 @@ Problem
 
 Expected
 - Support search by:
-  - Table
-  - Name
-  - Order id
+  - Table (table number)
+  - Waiter (via dropdown populated from orders)
+  - Must compose with status filters (All/Open/Closed)
 
 Log
 - See: `tasks/bill-search/logs.md`
+
+---
+
+## kitchen-stable-sorting
+Problem
+- In Kitchen order cards, items and units re-ordered whenever their status changed, causing UI jitter and loss of mental mapping.
+
+Expected
+- Stable, locale-aware alphabetical ordering that does not depend on status changes:
+  - Categories: A–Z / Α–Ω (Greek + English)
+  - Products within category: A–Z / Α–Ω
+  - Units within an item: by numeric `unitIndex` ascending; fallback by `id` with numeric compare
+
+Log
+- See: `tasks/kitchen-stable-sorting/logs.md`
+
+---
+
+## bill-actions
+Problem
+- Operators cannot perform common actions directly from the bills list.
+
+Expected
+- Add "Close Bill" action on the bill card.
+- API: `PATCH /api/bills/:id` with `{ status: "closed" }`.
+- UI updates instantly after action.
+
+Log
+- See: `tasks/bill-actions/logs.md`
