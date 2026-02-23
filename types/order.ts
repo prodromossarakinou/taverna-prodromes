@@ -9,7 +9,8 @@ export type OrderStatus =
   | 'delivered'
   | 'closed'
   | 'pending'
-  | 'cancelled';
+  | 'cancelled'
+  | 'deleted';
 export type WaiterMode = 'new' | 'view' | 'extras';
 
 export interface WaiterParams {

@@ -64,6 +64,8 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
     ...DEFAULT_KITCHEN_FILTERS,
   });
   const [selectedCategory, setSelectedCategory] = useState<OrderCategory | 'all'>('all');
+  // High-level view filter: Active | Closed | Deleted | All (default: Active)
+  const [viewFilter, setViewFilter] = useState<'active' | 'closed' | 'deleted' | 'all'>('active');
   const categories = useMemo(() => {
     const set = new Set<string>();
     for (const m of menuItems) {
@@ -201,10 +203,21 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
   }, [selectedCategory, statusFilteredOrders]);
 
   const filteredOrders = useMemo(() => {
-    // Show all orders that match the active filters. Previously this view was hard-capped to 10.
+    // Compose high-level view filter with existing granular/category filters
+    const byView = (() => {
+      if (viewFilter === 'all') return categoryFilteredOrders;
+      if (viewFilter === 'active') {
+        return categoryFilteredOrders.filter(o => o.status !== 'closed' && o.status !== 'deleted');
+      }
+      if (viewFilter === 'closed') {
+        return categoryFilteredOrders.filter(o => o.status === 'closed');
+      }
+      // deleted
+      return categoryFilteredOrders.filter(o => o.status === 'deleted');
+    })();
     // If performance becomes an issue with very large lists, consider list virtualization.
-    return categoryFilteredOrders;
-  }, [categoryFilteredOrders]);
+    return byView;
+  }, [categoryFilteredOrders, viewFilter]);
 
   // Build bill for a selected table (aggregation + totals)
   const buildBill = (table: string) => {
@@ -437,6 +450,28 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
       />
 
       <div className="p-4">
+        {/* High-level status filter: Active | Closed | Deleted | All */}
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
+          {([
+            { key: 'active', label: 'Active' },
+            { key: 'closed', label: 'Closed' },
+            { key: 'deleted', label: 'Deleted' },
+            { key: 'all', label: 'All' },
+          ] as Array<{ key: 'active'|'closed'|'deleted'|'all'; label: string }>).map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setViewFilter(key)}
+              className={cn(
+                'px-3 py-1.5 rounded text-xs font-semibold border',
+                viewFilter === key
+                  ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 border-transparent'
+                  : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         {filteredOrders.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-xl text-muted-foreground">Δεν υπάρχουν εκκρεμείς παραγγελίες</p>

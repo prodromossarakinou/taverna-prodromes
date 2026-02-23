@@ -163,7 +163,8 @@ export function OrderCard({
     <div
       className={cn(
         'kitchen-order-card bg-white dark:bg-gray-700 rounded-lg shadow-md border-2 flex flex-col min-w-[260px] sm:min-w-[300px] md:min-w-[340px] max-h-[70vh]',
-        accentClass
+        accentClass,
+        order.status === 'deleted' && 'opacity-60 grayscale'
       )}
     >
       <div className="kitchen-order-card-header p-3 flex items-start justify-between gap-3 border-b-2">

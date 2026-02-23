@@ -37,6 +37,12 @@ export async function POST(request: Request) {
         { status: 409 }
       );
     }
+    if (error?.code === 'ORDER_DELETED' || error?.message === 'ORDER_DELETED') {
+      return NextResponse.json(
+        { error: 'Cannot create a bill for deleted orders' },
+        { status: 400 }
+      );
+    }
     return NextResponse.json({ error: 'Failed to create bill' }, { status: 500 });
   }
 }

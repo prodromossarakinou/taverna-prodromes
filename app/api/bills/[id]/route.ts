@@ -39,6 +39,9 @@ export async function PATCH(
     if (error?.message === 'Bill not found') {
       return NextResponse.json({ error: 'Bill not found' }, { status: 404 });
     }
+    if (error?.code === 'ORDER_DELETED' || error?.message === 'ORDER_DELETED') {
+      return NextResponse.json({ error: 'Cannot update bill with deleted orders' }, { status: 400 });
+    }
     return NextResponse.json({ error: 'Failed to update bill' }, { status: 500 });
   }
 }

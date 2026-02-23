@@ -141,31 +141,10 @@ export class PrismaOrderRepository implements IOrderRepository {
   }
 
   async deleteOrder(orderId: string): Promise<void> {
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      select: { id: true },
-    });
-
+    const order = await prisma.order.findUnique({ where: { id: orderId }, select: { id: true } });
     if (!order) throw new Error('Order not found');
-
-    const orderItems = await prisma.orderItem.findMany({
-      where: { orderId },
-      select: { id: true },
-    });
-
-    const orderItemIds = orderItems.map(item => item.id);
-
-    await prisma.$transaction([
-      prisma.orderItemUnit.deleteMany({
-        where: { orderItemId: { in: orderItemIds } },
-      }),
-      prisma.orderItem.deleteMany({
-        where: { orderId },
-      }),
-      prisma.order.delete({
-        where: { id: orderId },
-      }),
-    ]);
+    // Soft delete: mark order as deleted; keep all data for history/visibility
+    await prisma.order.update({ where: { id: orderId }, data: { status: 'deleted' } });
   }
 
   async updateOrderStatus(orderId: string, status: OrderStatus): Promise<Order> {
@@ -380,6 +359,14 @@ export class PrismaBillRepository implements IBillRepository {
       prisma.menuItem.findMany(),
     ]);
 
+    // Safety: Do not allow billing for deleted orders
+    const hasDeleted = orders.some(o => o.status === 'deleted');
+    if (hasDeleted) {
+      const err: any = new Error('ORDER_DELETED');
+      err.code = 'ORDER_DELETED';
+      throw err;
+    }
+
     const menuLookupByNameCat = (name: string, category: string | null | undefined) =>
       menu.find(m => m.name === name && m.category === (category ?? m.category)) ||
       menu.find(m => m.name === name) || null;
@@ -557,6 +544,13 @@ export class PrismaBillRepository implements IBillRepository {
         }),
         prisma.menuItem.findMany(),
       ]);
+
+      // Safety: Do not allow refreshing with deleted orders
+      if (orders.some(o => o.status === 'deleted')) {
+        const err: any = new Error('ORDER_DELETED');
+        err.code = 'ORDER_DELETED';
+        throw err;
+      }
 
       const extraSet = new Set(nextExtraOrderIds);
       subtotalBase = 0;
