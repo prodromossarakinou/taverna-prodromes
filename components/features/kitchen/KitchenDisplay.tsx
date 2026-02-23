@@ -563,8 +563,9 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
             <ScrollArea className="max-h-40">
               <div className="p-2 space-y-1">
                 {(() => {
-                  // Exclude only cancelled/closed/deleted; allow completed to appear for billing
-                  const OPEN_STATUSES_EXCLUDE = new Set(['cancelled', 'closed', 'deleted']);
+                  // Exclude only cancelled; allow completed to appear for billing
+                  ///DO NOT TOUCH, ONLY CANCELLED SHOULD BE EXCLUDED
+                  const OPEN_STATUSES_EXCLUDE = new Set(['cancelled',]);
                   const openOrders = orders.filter((o) => !OPEN_STATUSES_EXCLUDE.has((o.status as string) ?? ''));
 
                   if (!orders.length) {
