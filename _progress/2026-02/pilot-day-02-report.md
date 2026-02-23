@@ -16,6 +16,11 @@ The application was used directly in real working conditions with staff using PD
 Active items: 37  
 Total items: 56
 
+#### Menu Analytics (aggregate, public-safe)
+- Distinct items ordered during service: 53
+- Mix trends indicate higher beverage selections alongside core grill and sides.
+- Detailed item-level analytics are retained privately (no product names or per-item counts published).
+
 ### Orders
 Total orders: 142
 
@@ -28,8 +33,8 @@ Breakdown:
 Total bills issued: 89
 
 Breakdown:
-- Open bills: 44
-- Closed bills: 45
+- Open bills: 0
+- Closed bills: 89
 
 ## Observations
 - System remained stable during heavy service load.
