@@ -50,3 +50,8 @@ next-env.d.ts
 
 # private operational reports (must never be pushed)
 /_private/
+
+# Exceptions: allow tracking the internal presentation and dummy screenshots
+!/_private/presentation.md
+!/_private/screens/
+!/_private/screens/**
