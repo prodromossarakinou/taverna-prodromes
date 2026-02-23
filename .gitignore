@@ -47,3 +47,6 @@ recovered_blobs/
 next-env.d.ts
 
 /lib/generated/prisma
+
+# private operational reports (must never be pushed)
+/_private/
