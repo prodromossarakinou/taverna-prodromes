@@ -417,6 +417,7 @@ export class PrismaBillRepository implements IBillRepository {
       : Math.min(subtotal, discountValue);
     const grandTotal = Math.max(0, subtotal - computedDiscount);
 
+    // Create the bill and, after successful creation, auto-close all participating orders.
     const created = await prisma.bill.create({
       data: {
         tableNumber,
@@ -434,6 +435,27 @@ export class PrismaBillRepository implements IBillRepository {
       },
       include: { items: true },
     });
+
+    // Auto-close orders included in this bill. This reflects real workflow: after billing,
+    // related orders are no longer editable. Idempotent: skip those already closed.
+    try {
+      const affectedOrderIds = [...new Set([...(baseOrderIds ?? []), ...(extraOrderIds ?? [])])];
+      if (affectedOrderIds.length > 0) {
+        await prisma.order.updateMany({
+          where: {
+            id: { in: affectedOrderIds },
+            // Avoid double updates; do not touch already closed orders
+            NOT: { status: 'closed' },
+          },
+          data: { status: 'closed' },
+        });
+      }
+    } catch (e) {
+      // Do not fail bill creation if closing orders fails; log and proceed.
+      // The UI can still reflect the created bill; follow-up tasks can reconcile statuses if needed.
+      // eslint-disable-next-line no-console
+      console.error('Auto-close orders after bill creation failed:', e);
+    }
 
     return {
       id: created.id,
