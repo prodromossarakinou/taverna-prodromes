@@ -41,6 +41,11 @@ export function OrderCard({
   onSetOrderStatus,
 }: OrderCardProps) {
   const accentClass = getOrderAccent(order);
+  // Locale-aware collator (Greek + English) for stable A–Z / Α–Ω sorting
+  const collator = useMemo(
+    () => new Intl.Collator(['el', 'en'], { sensitivity: 'base', numeric: true }),
+    []
+  );
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -60,6 +65,11 @@ export function OrderCard({
     });
     return grouped;
   }, [order.items]);
+
+  // Sorted category keys (Α–Ω / A–Z)
+  const sortedCategoryKeys = useMemo(() => {
+    return Object.keys(groupedItems).sort((a, b) => collator.compare(String(a), String(b)));
+  }, [groupedItems, collator]);
   const normalizedStatus = normalizeOrderStatus(order.status);
   const orderTime = new Intl.DateTimeFormat('el-GR', {
     hour: '2-digit',
@@ -242,7 +252,11 @@ export function OrderCard({
       </div>
 
       <div className="p-3 space-y-3 overflow-y-auto">
-        {Object.entries(groupedItems).map(([category, items]) => (
+        {sortedCategoryKeys.map((category) => {
+          const items = (groupedItems[category] ?? []).slice().sort((a, b) =>
+            collator.compare(a.name ?? '', b.name ?? '')
+          );
+          return (
           <div key={category}>
             <div className="text-xs font-bold text-gray-600 dark:text-gray-400 mb-1 uppercase">
               {String(category)}
@@ -286,7 +300,8 @@ export function OrderCard({
               ))}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

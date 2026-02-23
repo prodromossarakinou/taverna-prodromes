@@ -45,6 +45,7 @@ export function OrderItemRow({
     delivered: 'bg-green-500 dark:bg-green-500/20 dark:text-green-400 dark:border-green-500/80 text-white border-transparent',
   };
 
+  // Build units and ensure a stable, locale/number-aware order that does not depend on status
   const units = item.units && item.units.length > 0
     ? item.units
     : Array.from({ length: item.quantity }, (_value, index) => ({
@@ -52,7 +53,14 @@ export function OrderItemRow({
         status: fallbackStatus,
         unitIndex: index,
       }));
-  const unitStatuses = units.map(unit => unitStatusOverrides?.[unit.id] ?? unit.status);
+  // Sort by numeric unitIndex first; fall back to id with numeric compare for stability
+  const sortedUnits = units.slice().sort((a, b) => {
+    const ai = typeof a.unitIndex === 'number' ? a.unitIndex : Number.POSITIVE_INFINITY;
+    const bi = typeof b.unitIndex === 'number' ? b.unitIndex : Number.POSITIVE_INFINITY;
+    if (ai !== bi) return ai - bi;
+    return String(a.id).localeCompare(String(b.id), undefined, { numeric: true, sensitivity: 'base' });
+  });
+  const unitStatuses = sortedUnits.map(unit => unitStatusOverrides?.[unit.id] ?? unit.status);
   const uniqueStatuses = new Set(unitStatuses);
   const isUnified = item.quantity > 1 && uniqueStatuses.size === 1;
   const mixedStatus = item.quantity > 1 && uniqueStatuses.size > 1;
@@ -117,7 +125,7 @@ export function OrderItemRow({
       )}
       {isExpanded && item.quantity > 1 && (
         <div className="space-y-1">
-          {units.map((unit) => {
+          {sortedUnits.map((unit) => {
             const unitStatus = unitStatusOverrides?.[unit.id] ?? unit.status;
             return (
               <div key={unit.id} className="flex items-center justify-between gap-3">
