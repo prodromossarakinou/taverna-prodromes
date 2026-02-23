@@ -201,7 +201,9 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
   }, [selectedCategory, statusFilteredOrders]);
 
   const filteredOrders = useMemo(() => {
-    return categoryFilteredOrders.slice(0, 10);
+    // Show all orders that match the active filters. Previously this view was hard-capped to 10.
+    // If performance becomes an issue with very large lists, consider list virtualization.
+    return categoryFilteredOrders;
   }, [categoryFilteredOrders]);
 
   // Build bill for a selected table (aggregation + totals)
