@@ -46,6 +46,7 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [billLoading, setBillLoading] = useState(false);
   const [billError, setBillError] = useState<string | null>(null);
+  const [billSearch, setBillSearch] = useState<string>('');
   const [billData, setBillData] = useState<{
     baseOrders: typeof orders;
     extraOrders: typeof orders;
@@ -547,11 +548,24 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
                 Ενεργά τραπέζια
               </button>
             </div>
+            {/* Search input (filters base orders by tableNumber/waiterName) */}
+            {!selectedOrderId && (
+              <div className="px-3 py-2 border-b">
+                <input
+                  type="text"
+                  value={billSearch}
+                  onChange={(e) => setBillSearch(e.target.value)}
+                  placeholder="Search table or waiter…"
+                  className="w-full px-2 py-1.5 rounded border bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-sm"
+                />
+              </div>
+            )}
             <ScrollArea className="max-h-40">
               <div className="p-2 space-y-1">
                 {(() => {
-                  //WE DONT NEED FILTERS HERE
-                  const openOrders = orders;
+                  // Exclude only cancelled/closed/deleted; allow completed to appear for billing
+                  const OPEN_STATUSES_EXCLUDE = new Set(['cancelled', 'closed', 'deleted']);
+                  const openOrders = orders.filter((o) => !OPEN_STATUSES_EXCLUDE.has((o.status as string) ?? ''));
 
                   if (!orders.length) {
                     return <div className="text-center py-4 text-muted-foreground">Φόρτωση...</div>;
@@ -573,8 +587,19 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
                   }
 
                   // Λίστα τραπεζιών και παραγγελιών: κλικ σε ΤΡΑΠΕΖΙ -> βλέπεις τις παραγγελίες του, κλικ σε ΠΑΡΑΓΓΕΛΙΑ -> δείχνει λογαριασμό για αυτό το τραπέζι
+                  // Apply client-side search ONLY on BASE orders: match by tableNumber or waiterName (case-insensitive, partial)
+                  const lc = billSearch.trim().toLowerCase();
+                  const baseOrders = openOrders.filter(o => !o.isExtra && !o.parentId);
+                  const filteredBase = lc.length === 0
+                    ? baseOrders
+                    : baseOrders.filter(o => {
+                        const t = String(o.tableNumber ?? '').toLowerCase();
+                        const w = String(o.waiterName ?? '').toLowerCase();
+                        return t.includes(lc) || w.includes(lc);
+                      });
+
                   const byTable = new Map<string, { orders: typeof orders }>();
-                  for (const o of openOrders) {
+                  for (const o of filteredBase) {
                     const key = o.tableNumber;
                     const prev = byTable.get(key) ?? { orders: [] as typeof orders };
                     prev.orders.push(o);

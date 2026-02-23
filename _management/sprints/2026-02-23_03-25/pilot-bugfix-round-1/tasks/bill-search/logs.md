@@ -39,3 +39,51 @@ Completed: 2026-02-23 04:04
 
 ## Commit
 - Message: `feat(billing): bill search and waiter filter`
+
+# bill-search — Logs
+
+Status: OPEN → COMPLETED  
+Updated: 2026-02-23 09:22
+
+## Scope
+- Add search to the Kitchen Bill popup (not the /bills page).
+- Client-side filtering only; do not change API.
+- Filter base orders list by partial, case-insensitive match on:
+  - `tableNumber`
+  - `waiterName`
+- Must work with:
+  - Status logic (exclude `cancelled`, `closed`, `deleted`; allow `completed`)
+  - Base-order selection logic
+  - Extras derivation (base + its extras via `parentId`)
+
+## Implementation
+- File: `components/features/kitchen/KitchenDisplay.tsx`
+  - Added local state `billSearch` and a search input inside the Bill popup header (only shown when selecting base orders).
+  - Kept the status exclusions: only `cancelled`, `closed`, `deleted` are filtered out; `completed` is allowed.
+  - Search runs over BASE orders only (`!isExtra && !parentId`).
+  - Grouping by table preserves existing UX; base buttons listed per table are filtered according to the search.
+  - No API calls added/modified; purely in-memory filter.
+
+## Why this approach
+- Keeps the base+extras rule intact (selection always starts from a base root).
+- Avoids extra data fetching; instant UI updates.
+- Maintains compatibility with existing duplicate-prevention and scoping rules on the server.
+
+## Verification
+1) Create multiple tables and several base orders with different `waiterName`s.
+2) Open Kitchen → Bill popup.
+3) Type a table number fragment (e.g., `12`) → only base orders for matching tables remain visible.
+4) Type a waiter name fragment (e.g., `nik`) → only base orders for that waiter remain.
+5) Click a matching base → preview shows only that base + its extras; totals correct.
+6) Confirm no flicker/remount of the popup and scrolling remains stable.
+7) Confirm `completed` orders appear; `cancelled`/`closed`/`deleted` do not.
+
+## Acceptance
+- Typing table filters correctly.
+- Typing waiter filters correctly.
+- Works with many tables.
+- No popup flicker.
+- Base+extras rule intact.
+
+## Commit
+Message: `feat(kitchen): bill popup search by table/waiter (client-side)`
