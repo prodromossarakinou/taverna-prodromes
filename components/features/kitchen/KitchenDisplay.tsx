@@ -47,6 +47,7 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
   const [billLoading, setBillLoading] = useState(false);
   const [billError, setBillError] = useState<string | null>(null);
   const [billSearch, setBillSearch] = useState<string>('');
+  const [billShowDeleted, setBillShowDeleted] = useState<boolean>(false);
   const [billData, setBillData] = useState<{
     baseOrders: typeof orders;
     extraOrders: typeof orders;
@@ -551,22 +552,35 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
             {/* Search input (filters base orders by tableNumber/waiterName) */}
             {!selectedOrderId && (
               <div className="px-3 py-2 border-b">
-                <input
-                  type="text"
-                  value={billSearch}
-                  onChange={(e) => setBillSearch(e.target.value)}
-                  placeholder="Search table or waiter…"
-                  className="w-full px-2 py-1.5 rounded border bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-sm"
-                />
+                <div className="flex items-center gap-3 flex-wrap">
+                  <input
+                    type="text"
+                    value={billSearch}
+                    onChange={(e) => setBillSearch(e.target.value)}
+                    placeholder="Search table or waiter…"
+                    className="flex-1 min-w-[160px] px-2 py-1.5 rounded border bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-sm"
+                  />
+                  <label className="flex items-center gap-1 text-xs select-none">
+                    <input
+                      type="checkbox"
+                      checked={billShowDeleted}
+                      onChange={(e) => setBillShowDeleted(e.target.checked)}
+                    />
+                    <span>Show deleted</span>
+                  </label>
+                </div>
               </div>
             )}
             <ScrollArea className="max-h-40">
               <div className="p-2 space-y-1">
                 {(() => {
-                  // Exclude only cancelled; allow completed to appear for billing
-                  ///DO NOT TOUCH, ONLY CANCELLED SHOULD BE EXCLUDED
-                  const OPEN_STATUSES_EXCLUDE = new Set(['cancelled',]);
-                  const openOrders = orders.filter((o) => !OPEN_STATUSES_EXCLUDE.has((o.status as string) ?? ''));
+                  // Base exclusions: always exclude cancelled; allow completed
+                  const BASE_EXCLUDE = new Set(['cancelled']);
+                  let openOrders = orders.filter((o) => !BASE_EXCLUDE.has((o.status as string) ?? ''));
+                  // By default, hide deleted from popup list unless explicitly shown
+                  if (!billShowDeleted) {
+                    openOrders = openOrders.filter(o => (o.status as string) !== 'deleted');
+                  }
 
                   if (!orders.length) {
                     return <div className="text-center py-4 text-muted-foreground">Φόρτωση...</div>;
