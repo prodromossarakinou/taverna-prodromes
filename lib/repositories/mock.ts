@@ -97,6 +97,29 @@ export class MockOrderRepository implements IOrderRepository {
     mockOrders[orderIndex] = { ...order, items };
     return mockOrders[orderIndex];
   }
+
+  async updateOrderTableNumber(orderId: string, tableNumber: string): Promise<Order> {
+    const index = mockOrders.findIndex(o => o.id === orderId);
+    if (index === -1) throw new Error('Order not found');
+    mockOrders[index] = { ...mockOrders[index], tableNumber };
+    return mockOrders[index];
+  }
+
+  async updateOrderWaiterName(orderId: string, waiterName: string): Promise<Order> {
+    const index = mockOrders.findIndex(o => o.id === orderId);
+    if (index === -1) throw new Error('Order not found');
+    mockOrders[index] = { ...mockOrders[index], waiterName };
+    return mockOrders[index];
+  }
+
+  async removeOrderItem(orderId: string, itemId: string): Promise<Order> {
+    const orderIndex = mockOrders.findIndex(o => o.id === orderId);
+    if (orderIndex === -1) throw new Error('Order not found');
+    const order = mockOrders[orderIndex];
+    const items = order.items.filter(item => item.id !== itemId);
+    mockOrders[orderIndex] = { ...order, items };
+    return mockOrders[orderIndex];
+  }
 }
 
 // Export instance to be used by API routes

@@ -16,6 +16,9 @@ export interface IOrderRepository {
   updateOrderItemStatus(orderId: string, itemId: string, status: ItemStatus): Promise<Order>;
   updateOrderItemUnitStatus(orderId: string, unitId: string, status: ItemStatus): Promise<Order>;
   updateOrderItemUnitsStatus(orderId: string, itemId: string, status: ItemStatus): Promise<Order>;
+  updateOrderTableNumber(orderId: string, tableNumber: string): Promise<Order>;
+  updateOrderWaiterName(orderId: string, waiterName: string): Promise<Order>;
+  removeOrderItem(orderId: string, itemId: string): Promise<Order>;
 }
 
 export interface IBillRepository {
