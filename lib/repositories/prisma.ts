@@ -296,6 +296,22 @@ export class PrismaOrderRepository implements IOrderRepository {
     return this.mapDbOrder(order);
   }
 
+  async updateOrderWaiterName(orderId: string, waiterName: string): Promise<Order> {
+    const current = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true } });
+    if (!current) throw new Error('Order not found');
+    if (current.status === 'closed' || current.status === 'deleted') {
+      const err: any = new Error('ORDER_READ_ONLY');
+      err.code = 'ORDER_READ_ONLY';
+      throw err;
+    }
+    const order = await prisma.order.update({
+      where: { id: orderId },
+      data: { waiterName },
+      include: { items: { include: { units: true } } },
+    });
+    return this.mapDbOrder(order);
+  }
+
   async removeOrderItem(orderId: string, itemId: string): Promise<Order> {
     const current = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true } });
     if (!current) throw new Error('Order not found');
@@ -323,17 +339,42 @@ export class PrismaOrderRepository implements IOrderRepository {
 
 export class PrismaBillRepository implements IBillRepository {
   async createBill(input: CreateBillInput): Promise<BillType> {
-    const { tableNumber, waiterName, baseOrderIds, extraOrderIds, discount } = input;
+    const { tableNumber, waiterName, discount } = input;
 
-    // 1) Αποτροπή διπλής δημιουργίας λογαριασμού για τα ίδια orders
-    // Ελέγχουμε αν υπάρχει ήδη Bill που περιέχει οποιοδήποτε από τα δοθέντα orderIds
+    // New aggregation rule: Scope a bill to a single base order (non-extra) and its extras via parentId.
+    // Ignore client-provided extraOrderIds; derive them server-side to avoid cross-table merges.
+    const rootBaseOrderId = Array.isArray((input as any).baseOrderIds) && (input as any).baseOrderIds.length
+      ? (input as any).baseOrderIds[0]
+      : null;
+    if (!rootBaseOrderId) {
+      throw new Error('Missing base order id');
+    }
+
+    // Validate base order and derive extras strictly by parentId
+    const baseOrder = await prisma.order.findUnique({ where: { id: rootBaseOrderId }, include: { items: true } });
+    if (!baseOrder) throw new Error('Base order not found');
+    if (baseOrder.isExtra || baseOrder.parentId) {
+      const err: any = new Error('INVALID_BASE_ORDER');
+      err.code = 'INVALID_BASE_ORDER';
+      throw err;
+    }
+
+    const linkedExtras = await prisma.order.findMany({
+      where: { parentId: rootBaseOrderId, isExtra: true },
+      include: { items: true },
+    });
+
+    const finalBaseOrderIds = [rootBaseOrderId];
+    const finalExtraOrderIds = linkedExtras.map(o => o.id);
+
+    // Prevent duplicates using final sets
     const existing = await prisma.bill.findFirst({
       where: {
         OR: [
-          { baseOrderIds: { hasSome: baseOrderIds } },
-          { extraOrderIds: { hasSome: baseOrderIds } },
-          { baseOrderIds: { hasSome: extraOrderIds } },
-          { extraOrderIds: { hasSome: extraOrderIds } },
+          { baseOrderIds: { hasSome: finalBaseOrderIds } },
+          { extraOrderIds: { hasSome: finalBaseOrderIds } },
+          { baseOrderIds: { hasSome: finalExtraOrderIds } },
+          { extraOrderIds: { hasSome: finalExtraOrderIds } },
         ],
       },
       select: { id: true, status: true },
@@ -347,13 +388,8 @@ export class PrismaBillRepository implements IBillRepository {
       throw err;
     }
 
-    const [orders, menu] = await Promise.all([
-      prisma.order.findMany({
-        where: { id: { in: [...baseOrderIds, ...extraOrderIds] } },
-        include: { items: true },
-      }),
-      prisma.menuItem.findMany(),
-    ]);
+    const orders = [baseOrder, ...linkedExtras];
+    const menu = await prisma.menuItem.findMany();
 
     // Safety: Do not allow billing for deleted orders
     const hasDeleted = orders.some(o => o.status === 'deleted');
@@ -367,8 +403,8 @@ export class PrismaBillRepository implements IBillRepository {
       menu.find(m => m.name === name && m.category === (category ?? m.category)) ||
       menu.find(m => m.name === name) || null;
 
-    const baseSet = new Set(baseOrderIds);
-    const extraSet = new Set(extraOrderIds);
+    const baseSet = new Set(finalBaseOrderIds);
+    const extraSet = new Set(finalExtraOrderIds);
 
     let subtotalBase = 0;
     let subtotalExtras = 0;
@@ -405,8 +441,8 @@ export class PrismaBillRepository implements IBillRepository {
       data: {
         tableNumber,
         waiterName: waiterName ?? null,
-        baseOrderIds,
-        extraOrderIds,
+        baseOrderIds: finalBaseOrderIds,
+        extraOrderIds: finalExtraOrderIds,
         subtotalBase,
         subtotalExtras,
         discountType: discount?.type ?? null,
@@ -422,7 +458,7 @@ export class PrismaBillRepository implements IBillRepository {
     // Auto-close orders included in this bill. This reflects real workflow: after billing,
     // related orders are no longer editable. Idempotent: skip those already closed.
     try {
-      const affectedOrderIds = [...new Set([...(baseOrderIds ?? []), ...(extraOrderIds ?? [])])];
+      const affectedOrderIds = [...new Set([...(finalBaseOrderIds ?? []), ...(finalExtraOrderIds ?? [])])];
       if (affectedOrderIds.length > 0) {
         await prisma.order.updateMany({
           where: {
@@ -511,13 +547,28 @@ export class PrismaBillRepository implements IBillRepository {
     const patch: any = {};
     if (input.status) patch.status = input.status;
 
-    // Determine if we need to refresh orders snapshot
+    // Determine if we need to refresh orders snapshot.
+    // New rule: when baseOrderIds is provided, treat the first element as the root base and derive extras by parentId.
     const shouldRefreshOrders = Array.isArray(input.baseOrderIds) || Array.isArray(input.extraOrderIds);
 
     let nextBaseOrderIds = bill.baseOrderIds;
     let nextExtraOrderIds = bill.extraOrderIds;
-    if (Array.isArray(input.baseOrderIds)) nextBaseOrderIds = input.baseOrderIds;
-    if (Array.isArray(input.extraOrderIds)) nextExtraOrderIds = input.extraOrderIds;
+    if (Array.isArray(input.baseOrderIds) && input.baseOrderIds.length > 0) {
+      const root = input.baseOrderIds[0];
+      // Validate root base
+      const base = await prisma.order.findUnique({ where: { id: root }, select: { id: true, isExtra: true, parentId: true } });
+      if (!base || base.isExtra || base.parentId) {
+        const err: any = new Error('INVALID_BASE_ORDER');
+        err.code = 'INVALID_BASE_ORDER';
+        throw err;
+      }
+      nextBaseOrderIds = [root];
+      const extras = await prisma.order.findMany({ where: { parentId: root, isExtra: true }, select: { id: true } });
+      nextExtraOrderIds = extras.map(e => e.id);
+    } else if (Array.isArray(input.extraOrderIds)) {
+      // Ignore arbitrary client-provided extra ids when no base root is specified; keep existing extras
+      nextExtraOrderIds = bill.extraOrderIds;
+    }
 
     let subtotalBase = bill.subtotalBase;
     let subtotalExtras = bill.subtotalExtras;

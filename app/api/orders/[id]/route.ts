@@ -9,6 +9,23 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
 
+    // Waiter name update
+    if (typeof body.waiterName === 'string') {
+      const name = body.waiterName.trim();
+      if (name.length === 0) {
+        return NextResponse.json({ error: 'Waiter name cannot be empty' }, { status: 400 });
+      }
+      try {
+        const updatedOrder = await orderRepository.updateOrderWaiterName(id, name);
+        return NextResponse.json(updatedOrder);
+      } catch (e: any) {
+        if (e?.code === 'ORDER_READ_ONLY' || e?.message === 'ORDER_READ_ONLY') {
+          return NextResponse.json({ error: 'Order is read-only and cannot be edited' }, { status: 400 });
+        }
+        throw e;
+      }
+    }
+
     // Table rename
     if (typeof body.tableNumber === 'string' && body.tableNumber.trim().length > 0) {
       try {

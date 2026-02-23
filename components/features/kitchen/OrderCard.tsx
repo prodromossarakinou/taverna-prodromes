@@ -43,7 +43,7 @@ export function OrderCard({
   onSetOrderStatus,
 }: OrderCardProps) {
   const accentClass = getOrderAccent(order);
-  const { renameOrderTable, removeOrderItem } = useOrders();
+  const { renameOrderTable, removeOrderItem, renameWaiter } = useOrders();
   // Locale-aware collator (Greek + English) for stable A–Z / Α–Ω sorting
   const collator = useMemo(
     () => new Intl.Collator(['el', 'en'], { sensitivity: 'base', numeric: true }),
@@ -55,6 +55,7 @@ export function OrderCard({
   const [editPopupOpen, setEditPopupOpen] = useState(false);
   const [edited, setEdited] = useState(false);
   const [draftTable, setDraftTable] = useState(order.tableNumber);
+  const [draftWaiter, setDraftWaiter] = useState(order.waiterName ?? '');
   const [draftOrderStatus, setDraftOrderStatus] = useState<KitchenOrderStatus>(
     normalizeOrderStatus(order.status)
   );
@@ -158,6 +159,13 @@ export function OrderCard({
     setEdited(true);
   };
 
+  const handleRenameWaiter = async () => {
+    const next = (draftWaiter ?? '').toString().trim();
+    if (!next || next === (order.waiterName ?? '')) return;
+    await renameWaiter(order.id, next);
+    setEdited(true);
+  };
+
   const handleRemoveItem = async (itemId: string) => {
     await removeOrderItem(order.id, itemId);
     setEdited(true);
@@ -206,22 +214,7 @@ export function OrderCard({
                 EDITED
               </span>
             )}
-            {isEditing && (
-              <div className="mt-2 flex items-center gap-2">
-                <span className="text-[10px] font-semibold text-muted-foreground">Status</span>
-                <select
-                  value={draftOrderStatus}
-                  onChange={(event) => setDraftOrderStatus(event.target.value as KitchenOrderStatus)}
-                  className="h-7 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 text-[10px] font-semibold"
-                >
-                  {ORDER_STATUSES.map(option => (
-                    <option key={option} value={option}>
-                      {ORDER_STATUS_LABELS[option]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+            {/* Inline editors removed: waiter/status editing happens inside the popup only */}
             {order.isExtra && (
               <span className="kitchen-order-extra-badge text-[10px] font-bold px-1.5 py-0.5 rounded w-fit uppercase mt-1">
                 EXTRA
@@ -336,7 +329,7 @@ export function OrderCard({
         })}
       </div>
 
-      {/* Edit popup: table rename + remove items */}
+      {/* Edit popup: table/ waiter's name / status + remove items */}
       <Popup
         open={editPopupOpen}
         title="Edit order"
@@ -345,6 +338,23 @@ export function OrderCard({
         confirmText="Done"
       >
         <div className="flex flex-col gap-3 text-sm max-h-[70vh]">
+          {/* Waiter name */}
+          <div className="space-y-1">
+            <div className="text-xs font-semibold opacity-80">Waiter name</div>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={draftWaiter}
+                onChange={(e) => setDraftWaiter(e.target.value)}
+                className="flex-1 px-2 py-1.5 rounded border bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+                disabled={!canEdit}
+                placeholder="Enter waiter name"
+              />
+              <Button size="sm" onClick={handleRenameWaiter} disabled={!canEdit || (draftWaiter ?? '').trim().length === 0 || (draftWaiter ?? '').trim() === (order.waiterName ?? '').trim()}>
+                Save
+              </Button>
+            </div>
+          </div>
           <div className="space-y-1">
             <div className="text-xs font-semibold opacity-80">Table name/number</div>
             <div className="flex items-center gap-2">

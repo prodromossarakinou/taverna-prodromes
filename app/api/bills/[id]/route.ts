@@ -42,6 +42,12 @@ export async function PATCH(
     if (error?.code === 'ORDER_DELETED' || error?.message === 'ORDER_DELETED') {
       return NextResponse.json({ error: 'Cannot update bill with deleted orders' }, { status: 400 });
     }
+    if (
+      error?.code === 'INVALID_BASE_ORDER' ||
+      error?.message === 'INVALID_BASE_ORDER'
+    ) {
+      return NextResponse.json({ error: 'Invalid base order root for billing' }, { status: 400 });
+    }
     return NextResponse.json({ error: 'Failed to update bill' }, { status: 500 });
   }
 }

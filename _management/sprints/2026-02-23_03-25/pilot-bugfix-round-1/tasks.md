@@ -114,3 +114,18 @@ Expected
 
 Log
 - See: `tasks/bill-actions/logs.md`
+
+---
+
+## billing-avoid-duplicate-table-merge
+Problem
+- When creating a bill, different base orders that share the same `tableNumber` are incorrectly merged into one bill.
+
+Expected
+- Merge must occur only within the same base order group:
+  - Select a specific base (non-extra) order as the root
+  - Include only its extras where `isExtra = true` and `parentId = baseOrderId`
+  - Do not merge unrelated base orders that coincidentally share the same `tableNumber`
+
+Log
+- See: `tasks/billing-avoid-duplicate-table-merge/logs.md`

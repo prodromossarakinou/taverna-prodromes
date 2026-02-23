@@ -219,15 +219,18 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
     return byView;
   }, [categoryFilteredOrders, viewFilter]);
 
-  // Build bill for a selected table (aggregation + totals)
-  const buildBill = (table: string) => {
+  // Build bill from a selected BASE order (non-extra). Aggregation rule: base + its extras via parentId.
+  const buildBillFromBase = (baseOrderId: string) => {
     try {
       setBillError(null);
       setBillLoading(true);
 
-      const related = orders.filter((o) => o.tableNumber === table);
-      const baseOrders = related.filter((o) => !o.isExtra && !o.parentId);
-      const extraOrders = related.filter((o) => o.isExtra === true || Boolean(o.parentId));
+      const base = orders.find(o => o.id === baseOrderId && !o.isExtra && !o.parentId);
+      if (!base) {
+        throw new Error('Base order not found');
+      }
+      const baseOrders = [base];
+      const extraOrders = orders.filter((o) => o.isExtra === true && o.parentId === baseOrderId);
       const missing: string[] = [];
 
       const calcSection = (sectionOrders: typeof orders) => {
@@ -274,14 +277,16 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
     }
   };
 
-  // Αναζητά υπάρχον ανοιχτό bill για το επιλεγμένο τραπέζι
-  const fetchExistingBill = async (table: string | null) => {
+  // Αναζητά υπάρχον ανοιχτό bill για το επιλεγμένο base order (per root)
+  const fetchExistingBillForBase = async (baseId: string | null, table: string | null) => {
     try {
       if (!table) { setExistingBill(null); return; }
       const res = await fetch(`/api/bills?table=${encodeURIComponent(table)}&status=open`);
       if (!res.ok) { setExistingBill(null); return; }
       const bills: Bill[] = await res.json();
-      setExistingBill(bills && bills.length > 0 ? bills[0] : null);
+      // Find the bill that includes this base id specifically
+      const match = bills.find(b => Array.isArray(b.baseOrderIds) && b.baseOrderIds.includes(baseId ?? '')) ?? null;
+      setExistingBill(match);
     } catch {
       setExistingBill(null);
     }
@@ -311,10 +316,10 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
     }
   }, [billData]);
 
-  // Όποτε αλλάζει το επιλεγμένο τραπέζι, έλεγξε εάν υπάρχει ήδη λογαριασμός
+  // Όποτε αλλάζει το επιλεγμένο base order/τραπέζι, έλεγξε εάν υπάρχει ήδη λογαριασμός
   useEffect(() => {
-    void fetchExistingBill(selectedBillTable);
-  }, [selectedBillTable]);
+    void fetchExistingBillForBase(selectedOrderId, selectedBillTable);
+  }, [selectedOrderId, selectedBillTable]);
 
   // Προσαρμοσμένα σύνολα με βάση τα items που έχουν επιλεγεί για αφαίρεση (UI only)
   const adjustedTotals = useMemo(() => {
@@ -353,14 +358,14 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
   const handleCreateOrUpdateBill = async () => {
     if (!selectedBillTable || !billData) return;
     try {
-      const baseOrderIds = billData.baseOrders.map(o => o.id);
-      const extraOrderIds = billData.extraOrders.map(o => o.id);
+      const baseOrderIds = billData.baseOrders.map(o => o.id); // exactly one base
+      const extraOrderIds = billData.extraOrders.map(o => o.id); // derived via parentId
       const waiterName = billData.baseOrders[0]?.waiterName ?? billData.extraOrders[0]?.waiterName ?? null;
 
       if (existingBill) {
         // Ενημέρωση (PATCH) έκπτωσης/συνόλων στο υπάρχον bill
         const payload: any = {};
-        // Αντιστοίχιση των τρεχουσών παραγγελιών, ώστε να μπουν τυχόν νέα extras
+        // Αντιστοίχιση root base + derive extras (server θα το επιβάλει ξανά)
         payload.baseOrderIds = baseOrderIds;
         payload.extraOrderIds = extraOrderIds;
         if (billDiscount && billDiscount.value > 0) {
@@ -400,7 +405,8 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
           if (typeof window !== 'undefined') {
             window.alert(`Υπάρχει ήδη λογαριασμός για αυτό το τραπέζι/παραγγελίες${id}. Επιτρέπεται μόνο επεξεργασία.`);
           }
-          await fetchExistingBill(selectedBillTable);
+          // Refresh existing bill scoped to the currently selected base order (root) and table
+          await fetchExistingBillForBase(selectedOrderId, selectedBillTable);
           return;
         }
         throw new Error('Failed to create bill');
@@ -413,7 +419,6 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
     }
   };
 
-  // Εκτύπωση λογαριασμού σε PDF (server-side PDF)
   const handlePrintBill = async () => {
     if (!existingBill) return;
     try {
@@ -545,8 +550,8 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
             <ScrollArea className="max-h-40">
               <div className="p-2 space-y-1">
                 {(() => {
-                  const OPEN_STATUSES_EXCLUDE = new Set(['completed', 'cancelled']);
-                  const openOrders = orders.filter((o) => !OPEN_STATUSES_EXCLUDE.has((o.status as string) ?? ''));
+                  //WE DONT NEED FILTERS HERE
+                  const openOrders = orders;
 
                   if (!orders.length) {
                     return <div className="text-center py-4 text-muted-foreground">Φόρτωση...</div>;
@@ -590,29 +595,31 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
                     <div key={table} className="rounded-md border p-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                       <button
                         type="button"
-                        onClick={() => { setSelectedOrderId(null); setSelectedBillTable(table); buildBill(table); }}
+                        onClick={() => { setSelectedOrderId(null); setSelectedBillTable(table); /* selecting table no longer triggers build */ }}
                         className={cn(
                           'w-full text-left px-2 py-1 rounded-md transition-colors font-semibold select-none hover:bg-accent/50 cursor-pointer',
                           selectedBillTable === table ? 'text-blue-700 dark:text-blue-300' : 'text-foreground'
                         )}
-                        title={`Υπολογισμός λογαριασμού για το τραπέζι ${table}`}
+                        title={`Επιλογή τραπεζιού ${table}`}
                       >
                         Τραπέζι {table}
                       </button>
                       <div className="mt-1 grid grid-cols-2 gap-1">
-                        {data.orders.map((o) => {
+                        {data.orders
+                          .filter(o => !o.isExtra && !o.parentId) // only base orders selectable for billing root
+                          .map((o) => {
                           const time = new Date(o.timestamp).toLocaleTimeString('el-GR', { hour: '2-digit', minute: '2-digit', hour12: false });
                           const isExtra = o.isExtra === true;
                           return (
                             <button
                               key={o.id}
                               type="button"
-                              onClick={() => { setSelectedOrderId(o.id); setSelectedBillTable(o.tableNumber); buildBill(o.tableNumber); }}
+                              onClick={() => { setSelectedOrderId(o.id); setSelectedBillTable(o.tableNumber); buildBillFromBase(o.id); }}
                               className={cn(
                                 'text-left text-xs px-2 py-1 rounded-md border bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-1',
                                 isExtra && 'ring-1 ring-orange-400/60 dark:ring-orange-400/40'
                               )}
-                              title={isExtra ? 'EXTRA' : 'ORDER'}
+                              title={isExtra ? 'EXTRA' : 'BASE ORDER'}
                             >
                               <span className={cn('font-semibold', isExtra ? 'text-orange-600 dark:text-orange-300' : 'text-foreground')}>#{o.id.slice(0, 4)}</span>
                               <span className="opacity-70">• {time}</span>

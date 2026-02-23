@@ -43,6 +43,17 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+    if (
+      error?.code === 'INVALID_BASE_ORDER' ||
+      error?.message === 'INVALID_BASE_ORDER' ||
+      error?.message === 'Base order not found' ||
+      error?.message === 'Missing base order id'
+    ) {
+      return NextResponse.json(
+        { error: 'Invalid base order root for billing' },
+        { status: 400 }
+      );
+    }
     return NextResponse.json({ error: 'Failed to create bill' }, { status: 500 });
   }
 }

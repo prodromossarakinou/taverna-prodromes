@@ -11,6 +11,7 @@ interface OrderContextType {
     completeOrder: (orderId: string) => Promise<void>;
     deleteOrder: (orderId: string) => Promise<void>;
     renameOrderTable: (orderId: string, tableNumber: string) => Promise<void>;
+    renameWaiter: (orderId: string, waiterName: string) => Promise<void>;
     removeOrderItem: (orderId: string, itemId: string) => Promise<void>;
     updateItemStatus: (orderId: string, itemId: string) => Promise<void>;
     setItemStatus: (orderId: string, itemId: string, status: ItemStatus) => Promise<void>;
@@ -149,6 +150,20 @@ export function OrderProvider({children}: { children: ReactNode }) {
         }
     };
 
+    const renameWaiter = async (orderId: string, waiterName: string) => {
+        try {
+            const response = await fetch(`/api/orders/${orderId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ waiterName }),
+            });
+            if (!response.ok) throw new Error('Failed to update waiter name');
+            await fetchOrders();
+        } catch (error) {
+            console.error('Error updating waiter name:', error);
+        }
+    };
+
     const removeOrderItem = async (orderId: string, itemId: string) => {
         try {
             const response = await fetch(`/api/orders/${orderId}`, {
@@ -269,6 +284,7 @@ export function OrderProvider({children}: { children: ReactNode }) {
             completeOrder,
             deleteOrder,
             renameOrderTable,
+            renameWaiter,
             removeOrderItem,
             updateItemStatus,
             setItemStatus,

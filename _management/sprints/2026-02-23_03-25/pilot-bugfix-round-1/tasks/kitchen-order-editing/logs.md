@@ -41,10 +41,12 @@ Kitchen must be able to correct an order without deleting it.
 - `lib/repositories/prisma.ts`
   - Added helpers with read-only guard:
     - `updateOrderTableNumber(orderId, tableNumber)` → PATCH rename table.
+    - `updateOrderWaiterName(orderId, waiterName)` → PATCH waiter name.
     - `removeOrderItem(orderId, itemId)` → transactional delete of units then item.
   - Introduced `mapDbOrder()` to normalize DB → API shape.
 - `app/api/orders/[id]/route.ts`
   - Extended PATCH to accept:
+    - `{ waiterName: string }` → update waiter name (non-empty)
     - `{ tableNumber: string }` → rename table
     - `{ removeItemId: string }` → remove item
   - Returns 400 for read-only orders and 404 for missing items.
@@ -53,17 +55,19 @@ Kitchen must be able to correct an order without deleting it.
 - `contexts/OrderContext.tsx`
   - Added context methods:
     - `renameOrderTable(orderId, tableNumber)`
+    - `renameWaiter(orderId, waiterName)`
     - `removeOrderItem(orderId, itemId)`
-  - Both call PATCH and refresh orders.
+  - All call PATCH and refresh orders.
 - `components/features/kitchen/OrderCard.tsx`
-  - Added an Edit popup that opens from the `Edit` button.
+  - Edit popup accessed from `Edit` button.
   - Popup sections:
-    - Table name/number input + Save
+    - Waiter name (free-text) + Save
+    - Table name/number + Save
     - Order status select + Save
     - Items list with `Remove` per row
   - Disabled controls when order is `closed` or `deleted`.
   - Shows `EDITED` label after successful change.
-  - The existing inline status editing remains intact.
+  - Inline editors removed: waiter/status editing happens only inside the popup.
 
 ## Safety Rules
 - Server rejects edits on `closed` or `deleted` orders with `ORDER_READ_ONLY` → mapped to 400.
@@ -80,4 +84,4 @@ Kitchen must be able to correct an order without deleting it.
 - Bill creation flow unchanged; soft-delete and auto-close behaviors remain intact.
 
 ## Commit
-Message: `feat(kitchen): allow order editing from kitchen view`
+Message: `feat(kitchen): move status editing to popup; add waiterName editing`
