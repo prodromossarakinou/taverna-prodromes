@@ -646,7 +646,9 @@ export function KitchenDisplay({ onSwitchView, ThemeToggle }: KitchenDisplayProp
                               )}
                               title={isExtra ? 'EXTRA' : 'BASE ORDER'}
                             >
-                              <span className={cn('font-semibold', isExtra ? 'text-orange-600 dark:text-orange-300' : 'text-foreground')}>#{o.id.slice(0, 4)}</span>
+                              <span className={cn('font-semibold truncate max-w-[90px]', isExtra ? 'text-orange-600 dark:text-orange-300' : 'text-foreground')}>
+                                {o.waiterName || '—'}
+                              </span>
                               <span className="opacity-70">• {time}</span>
                               {isExtra && (
                                 <span className="ml-auto text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300">extra</span>
