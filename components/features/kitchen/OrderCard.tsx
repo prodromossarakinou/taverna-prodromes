@@ -6,6 +6,8 @@ import { ItemStatus, Order, OrderCategory, OrderItem, OrderItemUnit } from '@/ty
 import { OrderItemRow } from './OrderItemRow';
 import { cn } from '@/components/ui/utils';
 import { getOrderAccent, KitchenOrderStatus, normalizeOrderStatus } from './orderStatus';
+import { Popup } from '@/components/ui/Popup';
+import { useOrders } from '@/contexts/OrderContext';
 
 // Δυναμικές κατηγορίες: εμφανίζουμε την κατηγορία όπως έρχεται από τα Menu Items
 
@@ -41,6 +43,7 @@ export function OrderCard({
   onSetOrderStatus,
 }: OrderCardProps) {
   const accentClass = getOrderAccent(order);
+  const { renameOrderTable, removeOrderItem } = useOrders();
   // Locale-aware collator (Greek + English) for stable A–Z / Α–Ω sorting
   const collator = useMemo(
     () => new Intl.Collator(['el', 'en'], { sensitivity: 'base', numeric: true }),
@@ -49,6 +52,9 @@ export function OrderCard({
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [editPopupOpen, setEditPopupOpen] = useState(false);
+  const [edited, setEdited] = useState(false);
+  const [draftTable, setDraftTable] = useState(order.tableNumber);
   const [draftOrderStatus, setDraftOrderStatus] = useState<KitchenOrderStatus>(
     normalizeOrderStatus(order.status)
   );
@@ -97,10 +103,12 @@ export function OrderCard({
         unitStatuses[unit.id] = unit.status;
       });
     });
+    setDraftTable(order.tableNumber);
     setDraftOrderStatus(normalizeOrderStatus(order.status));
     setDraftItemStatuses(itemStatuses);
     setDraftUnitStatuses(unitStatuses);
     setIsEditing(true);
+    setEditPopupOpen(true);
   };
 
   const cancelEdit = () => {
@@ -141,6 +149,20 @@ export function OrderCard({
     setIsEditing(false);
   };
 
+  const canEdit = normalizedStatus !== 'closed' && order.status !== 'deleted';
+
+  const handleRenameTable = async () => {
+    const next = (draftTable ?? '').toString().trim();
+    if (!next || next === order.tableNumber) return;
+    await renameOrderTable(order.id, next);
+    setEdited(true);
+  };
+
+  const handleRemoveItem = async (itemId: string) => {
+    await removeOrderItem(order.id, itemId);
+    setEdited(true);
+  };
+
   const handleUnitClick = async (item: OrderItem, unit: OrderItemUnit, status: ItemStatus) => {
     if (isEditing) return;
     const statuses: ItemStatus[] = ['pending', 'ready', 'delivered'];
@@ -179,6 +201,11 @@ export function OrderCard({
             <span className="text-xs font-semibold opacity-90">
               {order.waiterName} • {orderTime}
             </span>
+            {edited && (
+              <span className="mt-1 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-200 w-fit">
+                EDITED
+              </span>
+            )}
             {isEditing && (
               <div className="mt-2 flex items-center gap-2">
                 <span className="text-[10px] font-semibold text-muted-foreground">Status</span>
@@ -213,20 +240,22 @@ export function OrderCard({
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={saveEdit}
-                disabled={isSaving}
+                onClick={startEdit}
                 className="h-7 px-3"
+                disabled={!canEdit}
+                title={!canEdit ? 'Order is read-only' : 'Edit statuses'}
               >
-                Save
+                Edit
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={cancelEdit}
-                disabled={isSaving}
+                onClick={() => setEditPopupOpen(true)}
                 className="h-7 px-3"
+                disabled={!canEdit}
+                title={!canEdit ? 'Order is read-only' : 'Edit table / remove items'}
               >
-                Cancel
+                Edit order…
               </Button>
             </>
           ) : (
@@ -235,6 +264,8 @@ export function OrderCard({
               size="sm"
               onClick={startEdit}
               className="h-7 px-3"
+              disabled={!canEdit}
+              title={!canEdit ? 'Order is read-only' : 'Edit order'}
             >
               Edit
             </Button>
@@ -304,6 +335,77 @@ export function OrderCard({
           );
         })}
       </div>
+
+      {/* Edit popup: table rename + remove items */}
+      <Popup
+        open={editPopupOpen}
+        title="Edit order"
+        onClose={() => { setEditPopupOpen(false); setIsEditing(false); }}
+        onConfirm={() => { setEditPopupOpen(false); setIsEditing(false); }}
+        confirmText="Done"
+      >
+        <div className="flex flex-col gap-3 text-sm max-h-[70vh]">
+          <div className="space-y-1">
+            <div className="text-xs font-semibold opacity-80">Table name/number</div>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={draftTable}
+                onChange={(e) => setDraftTable(e.target.value)}
+                className="flex-1 px-2 py-1.5 rounded border bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+                disabled={!canEdit}
+              />
+              <Button size="sm" onClick={handleRenameTable} disabled={!canEdit}>
+                Save
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="text-xs font-semibold opacity-80">Order status</div>
+            <div className="flex items-center gap-2">
+              <select
+                value={draftOrderStatus}
+                onChange={(event) => setDraftOrderStatus(event.target.value as KitchenOrderStatus)}
+                className="h-8 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 text-xs font-semibold"
+                disabled={!canEdit}
+              >
+                {ORDER_STATUSES.map(option => (
+                  <option key={option} value={option}>
+                    {ORDER_STATUS_LABELS[option]}
+                  </option>
+                ))}
+              </select>
+              <Button size="sm" onClick={async () => { await onSetOrderStatus(order.id, draftOrderStatus); setEdited(true); }} disabled={!canEdit}>
+                Save
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="text-xs font-semibold opacity-80">Items</div>
+            <div className="space-y-1">
+              {order.items.length === 0 && (
+                <div className="text-xs opacity-70">No items</div>
+              )}
+              {order.items.map((item) => (
+                <div key={item.id} className="flex items-center justify-between gap-2 rounded border px-2 py-1 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium truncate">
+                    {item.name} ×{item.quantity}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void handleRemoveItem(item.id)}
+                    disabled={!canEdit}
+                    className="h-7 px-2 text-xs"
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Popup>
     </div>
   );
 }

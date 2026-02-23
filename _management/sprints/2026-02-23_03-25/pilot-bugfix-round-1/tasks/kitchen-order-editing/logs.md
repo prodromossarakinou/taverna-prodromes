@@ -21,3 +21,63 @@ Created: 2026-02-23 03:25
 
 ## Verification
 - TBD
+
+# kitchen-order-editing — Logs
+
+Status: OPEN → COMPLETED  
+Updated: 2026-02-23 04:32
+
+## Goal
+Kitchen must be able to correct an order without deleting it.
+
+## Scope Implemented
+- Edit from Kitchen card via a popup: table rename, status change, and item removal.
+- Server-persisted changes; no local-only state.
+- Read-only safety for `closed` and `deleted` orders.
+- UI indicator `EDITED` appears on the order card after a successful edit.
+
+## Implementation Details
+### Backend
+- `lib/repositories/prisma.ts`
+  - Added helpers with read-only guard:
+    - `updateOrderTableNumber(orderId, tableNumber)` → PATCH rename table.
+    - `removeOrderItem(orderId, itemId)` → transactional delete of units then item.
+  - Introduced `mapDbOrder()` to normalize DB → API shape.
+- `app/api/orders/[id]/route.ts`
+  - Extended PATCH to accept:
+    - `{ tableNumber: string }` → rename table
+    - `{ removeItemId: string }` → remove item
+  - Returns 400 for read-only orders and 404 for missing items.
+
+### Frontend
+- `contexts/OrderContext.tsx`
+  - Added context methods:
+    - `renameOrderTable(orderId, tableNumber)`
+    - `removeOrderItem(orderId, itemId)`
+  - Both call PATCH and refresh orders.
+- `components/features/kitchen/OrderCard.tsx`
+  - Added an Edit popup that opens from the `Edit` button.
+  - Popup sections:
+    - Table name/number input + Save
+    - Order status select + Save
+    - Items list with `Remove` per row
+  - Disabled controls when order is `closed` or `deleted`.
+  - Shows `EDITED` label after successful change.
+  - The existing inline status editing remains intact.
+
+## Safety Rules
+- Server rejects edits on `closed` or `deleted` orders with `ORDER_READ_ONLY` → mapped to 400.
+
+## Verification
+1. Create a new order with 2+ items.
+2. In Kitchen, click `Edit` on the order card → popup opens.
+3. Change table (e.g., `Table 5 → Table 7`) → Save → card updates; persists after reload.
+4. Remove one item → list updates; persists after reload.
+5. Change status (e.g., `new → started`) → Save → reflected on card.
+6. Close the order and try editing again → controls disabled (read-only).
+
+## Notes
+- Bill creation flow unchanged; soft-delete and auto-close behaviors remain intact.
+
+## Commit
+Message: `feat(kitchen): allow order editing from kitchen view`

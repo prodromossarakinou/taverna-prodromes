@@ -10,6 +10,8 @@ interface OrderContextType {
     setOrderStatus: (orderId: string, status: OrderStatus) => Promise<void>;
     completeOrder: (orderId: string) => Promise<void>;
     deleteOrder: (orderId: string) => Promise<void>;
+    renameOrderTable: (orderId: string, tableNumber: string) => Promise<void>;
+    removeOrderItem: (orderId: string, itemId: string) => Promise<void>;
     updateItemStatus: (orderId: string, itemId: string) => Promise<void>;
     setItemStatus: (orderId: string, itemId: string, status: ItemStatus) => Promise<void>;
     updateItemUnitStatus: (orderId: string, unitId: string, status: ItemStatus) => Promise<void>;
@@ -133,6 +135,34 @@ export function OrderProvider({children}: { children: ReactNode }) {
         }
     };
 
+    const renameOrderTable = async (orderId: string, tableNumber: string) => {
+        try {
+            const response = await fetch(`/api/orders/${orderId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tableNumber }),
+            });
+            if (!response.ok) throw new Error('Failed to rename table');
+            await fetchOrders();
+        } catch (error) {
+            console.error('Error renaming order table:', error);
+        }
+    };
+
+    const removeOrderItem = async (orderId: string, itemId: string) => {
+        try {
+            const response = await fetch(`/api/orders/${orderId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ removeItemId: itemId }),
+            });
+            if (!response.ok) throw new Error('Failed to remove order item');
+            await fetchOrders();
+        } catch (error) {
+            console.error('Error removing order item:', error);
+        }
+    };
+
     const updateItemStatus = async (orderId: string, itemId: string) => {
         const order = orders.find(currentOrder => currentOrder.id === orderId);
         const item = order?.items.find(orderItem => orderItem.id === itemId);
@@ -238,6 +268,8 @@ export function OrderProvider({children}: { children: ReactNode }) {
             updateOrder,
             completeOrder,
             deleteOrder,
+            renameOrderTable,
+            removeOrderItem,
             updateItemStatus,
             setItemStatus,
             updateItemUnitStatus,

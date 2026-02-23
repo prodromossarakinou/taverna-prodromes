@@ -8,7 +8,36 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    
+
+    // Table rename
+    if (typeof body.tableNumber === 'string' && body.tableNumber.trim().length > 0) {
+      try {
+        const updatedOrder = await orderRepository.updateOrderTableNumber(id, body.tableNumber.trim());
+        return NextResponse.json(updatedOrder);
+      } catch (e: any) {
+        if (e?.code === 'ORDER_READ_ONLY' || e?.message === 'ORDER_READ_ONLY') {
+          return NextResponse.json({ error: 'Order is read-only and cannot be edited' }, { status: 400 });
+        }
+        throw e;
+      }
+    }
+
+    // Remove item
+    if (typeof body.removeItemId === 'string' && body.removeItemId.trim().length > 0) {
+      try {
+        const updatedOrder = await orderRepository.removeOrderItem(id, body.removeItemId.trim());
+        return NextResponse.json(updatedOrder);
+      } catch (e: any) {
+        if (e?.code === 'ORDER_READ_ONLY' || e?.message === 'ORDER_READ_ONLY') {
+          return NextResponse.json({ error: 'Order is read-only and cannot be edited' }, { status: 400 });
+        }
+        if (e?.message === 'Order item not found') {
+          return NextResponse.json({ error: 'Order item not found' }, { status: 404 });
+        }
+        throw e;
+      }
+    }
+
     if (body.orderStatus || body.status) {
       const nextStatus = body.orderStatus ?? body.status;
       const updatedOrder = await orderRepository.updateOrderStatus(id, nextStatus);

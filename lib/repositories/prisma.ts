@@ -88,6 +88,25 @@ export class PrismaOrderRepository implements IOrderRepository {
     }));
   }
 
+  private mapDbOrder(order: any): Order {
+    return {
+      ...order,
+      timestamp: order.timestamp.getTime(),
+      status: order.status as OrderStatus,
+      isExtra: order.isExtra,
+      parentId: order.parentId ?? undefined,
+      items: order.items.map((item: any) => ({
+        ...item,
+        category: item.category as OrderCategory,
+        itemStatus: item.itemStatus as ItemStatus,
+        units: item.units.map((unit: any) => ({
+          ...unit,
+          status: unit.status as ItemStatus,
+        })),
+      })),
+    } as Order;
+  }
+
   async createOrder(orderData: Omit<Order, 'id' | 'timestamp' | 'status'>): Promise<Order> {
     const order = await prisma.order.create({
       data: {
@@ -160,22 +179,7 @@ export class PrismaOrderRepository implements IOrderRepository {
       },
     });
 
-    return {
-      ...order,
-      timestamp: order.timestamp.getTime(),
-      status: order.status as OrderStatus,
-      isExtra: order.isExtra,
-      parentId: order.parentId ?? undefined,
-      items: order.items.map(item => ({
-        ...item,
-        category: item.category as OrderCategory,
-        itemStatus: item.itemStatus as ItemStatus,
-        units: item.units.map(unit => ({
-          ...unit,
-          status: unit.status as ItemStatus,
-        })),
-      })),
-    };
+    return this.mapDbOrder(order);
   }
 
   async updateOrderItemStatus(orderId: string, itemId: string, status: ItemStatus): Promise<Order> {
@@ -196,23 +200,7 @@ export class PrismaOrderRepository implements IOrderRepository {
     });
 
     if (!order) throw new Error('Order not found');
-
-    return {
-      ...order,
-      timestamp: order.timestamp.getTime(),
-      status: order.status as OrderStatus,
-      isExtra: order.isExtra,
-      parentId: order.parentId ?? undefined,
-      items: order.items.map(item => ({
-        ...item,
-        category: item.category as OrderCategory,
-        itemStatus: item.itemStatus as ItemStatus,
-        units: item.units.map(unit => ({
-          ...unit,
-          status: unit.status as ItemStatus,
-        })),
-      })),
-    };
+    return this.mapDbOrder(order);
   }
 
   async updateOrderItemUnitStatus(orderId: string, unitId: string, status: ItemStatus): Promise<Order> {
@@ -268,23 +256,7 @@ export class PrismaOrderRepository implements IOrderRepository {
     });
 
     if (!order) throw new Error('Order not found');
-
-    return {
-      ...order,
-      timestamp: order.timestamp.getTime(),
-      status: order.status as OrderStatus,
-      isExtra: order.isExtra,
-      parentId: order.parentId ?? undefined,
-      items: order.items.map(item => ({
-        ...item,
-        category: item.category as OrderCategory,
-        itemStatus: item.itemStatus as ItemStatus,
-        units: item.units.map(unit => ({
-          ...unit,
-          status: unit.status as ItemStatus,
-        })),
-      })),
-    };
+    return this.mapDbOrder(order);
   }
 
   async updateOrderItemUnitsStatus(orderId: string, itemId: string, status: ItemStatus): Promise<Order> {
@@ -305,23 +277,47 @@ export class PrismaOrderRepository implements IOrderRepository {
     });
 
     if (!order) throw new Error('Order not found');
+    return this.mapDbOrder(order);
+  }
 
-    return {
-      ...order,
-      timestamp: order.timestamp.getTime(),
-      status: order.status as OrderStatus,
-      isExtra: order.isExtra,
-      parentId: order.parentId ?? undefined,
-      items: order.items.map(item => ({
-        ...item,
-        category: item.category as OrderCategory,
-        itemStatus: item.itemStatus as ItemStatus,
-        units: item.units.map(unit => ({
-          ...unit,
-          status: unit.status as ItemStatus,
-        })),
-      })),
-    };
+  async updateOrderTableNumber(orderId: string, tableNumber: string): Promise<Order> {
+    const current = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true } });
+    if (!current) throw new Error('Order not found');
+    if (current.status === 'closed' || current.status === 'deleted') {
+      const err: any = new Error('ORDER_READ_ONLY');
+      err.code = 'ORDER_READ_ONLY';
+      throw err;
+    }
+    const order = await prisma.order.update({
+      where: { id: orderId },
+      data: { tableNumber },
+      include: { items: { include: { units: true } } },
+    });
+    return this.mapDbOrder(order);
+  }
+
+  async removeOrderItem(orderId: string, itemId: string): Promise<Order> {
+    const current = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true } });
+    if (!current) throw new Error('Order not found');
+    if (current.status === 'closed' || current.status === 'deleted') {
+      const err: any = new Error('ORDER_READ_ONLY');
+      err.code = 'ORDER_READ_ONLY';
+      throw err;
+    }
+    // Ensure the item belongs to the order
+    const item = await prisma.orderItem.findFirst({ where: { id: itemId, orderId } });
+    if (!item) throw new Error('Order item not found');
+    // Delete units first for safety, then the item
+    await prisma.$transaction(async (tx) => {
+      await tx.orderItemUnit.deleteMany({ where: { orderItemId: itemId } });
+      await tx.orderItem.delete({ where: { id: itemId } });
+    });
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: { include: { units: true } } },
+    });
+    if (!order) throw new Error('Order not found');
+    return this.mapDbOrder(order);
   }
 }
 
