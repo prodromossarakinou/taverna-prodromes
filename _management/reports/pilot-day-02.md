@@ -1,4 +1,4 @@
-# Pilot Report — Day 2
+# Pilot Report — Day 2 (Live Restaurant Test)
 
 Date: 2026-02-23  
 Event: Clean Monday / Koudounoforoi Parade  
