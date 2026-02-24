@@ -49,9 +49,34 @@ Capabilities
 
 ## 3 — Waiter App (PDA)
 
-Screens:
+Screens (3 per row with captions):
 
-![Home](<screens/homeInterfacePDA-σερβιτόρου.png>)
+<div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between;">
+  <figure style="flex:0 0 32%; margin:0; text-align:center;">
+    <img src="screens/homeInterfacePDA-σερβιτόρου.png" alt="Home — PDA" style="width:100%; height:auto;" />
+    <figcaption style="font-size:12px; margin-top:6px;">Home — PDA</figcaption>
+  </figure>
+  <figure style="flex:0 0 32%; margin:0; text-align:center;">
+    <img src="screens/λήψΠαραγγελίαςPDA-σερβιτόρου.png" alt="Λήψη παραγγελίας — PDA" style="width:100%; height:auto;" />
+    <figcaption style="font-size:12px; margin-top:6px;">Λήψη παραγγελίας — PDA</figcaption>
+  </figure>
+  <figure style="flex:0 0 32%; margin:0; text-align:center;">
+    <img src="screens/επιλογήΠαραγγελίαςΓιαΠροσθήκηΈξτραPDA-σερβιτόρου.png" alt="Επιλογή παραγγελίας για έξτρα — PDA" style="width:100%; height:auto;" />
+    <figcaption style="font-size:12px; margin-top:6px;">Επιλογή παραγγελίας για έξτρα — PDA</figcaption>
+  </figure>
+  <figure style="flex:0 0 32%; margin:0; text-align:center;">
+    <img src="screens/λήψηΠαραγγελίας-ΈξτραPDA-σερβιτόρου.png" alt="Έξτρα — PDA" style="width:100%; height:auto;" />
+    <figcaption style="font-size:12px; margin-top:6px;">Ροή έξτρα — PDA</figcaption>
+  </figure>
+  <figure style="flex:0 0 32%; margin:0; text-align:center;">
+    <img src="screens/Παραγγελίες-PDA-σερβιτόρου.png" alt="Παραγγελίες — PDA" style="width:100%; height:auto;" />
+    <figcaption style="font-size:12px; margin-top:6px;">Λίστα παραγγελιών — PDA</figcaption>
+  </figure>
+  <figure style="flex:0 0 32%; margin:0; text-align:center;">
+    <img src="screens/λήψηΠαραγγελίας-liveOrderingPDA-σερβιτόρου.png" alt="Live ordering — PDA" style="width:100%; height:auto;" />
+    <figcaption style="font-size:12px; margin-top:6px;">Live ordering — PDA</figcaption>
+  </figure>
+</div>
 
 Functions
 
@@ -65,8 +90,6 @@ Functions
 
 ## 4 — Order Intake
 
-![Order](<screens/λήψΠαραγγελίαςPDA-σερβιτόρου.png>)
-
 Features
 
 - Category filtering
@@ -78,8 +101,6 @@ Features
 ---
 
 ## 5 — Extras Flow
-
-![Extras](<screens/λήψηΠαραγγελίας-ΈξτραPDA-σερβιτόρου.png>)
 
 Key design decision:  
 Extras are separate kitchen tickets but linked to the base order.
@@ -103,6 +124,23 @@ Capabilities
 - Status tracking
 
 Used during the pilot under heavy load.
+
+Screens (3 per row):
+
+<div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between;">
+  <figure style="flex:0 0 32%; margin:0; text-align:center;">
+    <img src="screens/Κουζίνα-Παραγγελίες.png" alt="Κουζίνα — Παραγγελίες" style="width:100%; height:auto;" />
+    <figcaption style="font-size:12px; margin-top:6px;">Κουζίνα — Παραγγελίες</figcaption>
+  </figure>
+  <figure style="flex:0 0 32%; margin:0; text-align:center;">
+    <img src="screens/Λογαριασμός.png" alt="Λογαριασμός" style="width:100%; height:auto;" />
+    <figcaption style="font-size:12px; margin-top:6px;">Λογαριασμός</figcaption>
+  </figure>
+  <figure style="flex:0 0 32%; margin:0; text-align:center;">
+    <img src="screens/Αdmin-Προϊόντα.png" alt="Admin — Προϊόντα" style="width:100%; height:auto;" />
+    <figcaption style="font-size:12px; margin-top:6px;">Admin — Προϊόντα</figcaption>
+  </figure>
+</div>
 
 ---
 
