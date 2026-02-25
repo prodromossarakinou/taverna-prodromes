@@ -43,6 +43,10 @@ Backend connectivity and database integration are not implemented yet and are pl
 - Header UI/UX hard refactor (integrated switcher, removed floating elements, flex flow enforcement)
 - Updated sprint `order-flow-ui-improvements` with new scope (start order, extras, review)
 
+## Presentations & Public Content
+
+- Created and deployed [Product Presentation](https://dijon-stage-93635007.figma.site/)
+
 ## Notes
 
 Commit-level entries must exist as:

@@ -119,3 +119,5 @@
     - Προσθήκη εικονιδίου `MessageSquare` στο `OrderSummary.tsx` για την ενεργοποίηση του prompt.
     - Εμφάνιση των σημειώσεων ως πλάγιο γκρι κείμενο κάτω από το όνομα του προϊόντος.
     - Απλοποίηση της αλληλεπίδρασης για ταχύτερη καταχώρηση δεδομένων από τους σερβιτόρους.
+- **2026-02-25 23:50**: Created and deployed [Product Presentation](https://dijon-stage-93635007.figma.site/).
+    - Documented as Day 9 of the 100 Days Challenge.

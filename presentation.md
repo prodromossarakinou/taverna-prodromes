@@ -49,67 +49,42 @@ Capabilities
 
 ## 3 — Waiter App (PDA)
 
-Screens (3 per row with captions):
+Pilot context: Clean Monday, high traffic, real restaurant conditions. PDA used by staff throughout service for fast order intake, updates, and completion.
 
-<div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between;">
-  <figure style="flex:0 0 32%; margin:0; text-align:center;">
-    <img src="screens/homeInterfacePDA-σερβιτόρου.png" alt="Home — PDA" style="width:100%; height:auto;" />
-    <figcaption style="font-size:12px; margin-top:6px;">Home — PDA</figcaption>
+<div style="display:flex; flex-wrap:wrap; gap:20px; padding:6px 0; align-items:flex-start; justify-content:flex-start;">
+  <figure style="flex:0 0 calc(33% - 14px); margin:0;">
+    <img src="screens/homeInterfacePDA-σερβιτόρου.png" alt="PDA — Home" style="width:100%; height:auto; display:block; border:1px solid #e5e7eb; border-radius:6px;" />
   </figure>
-  <figure style="flex:0 0 32%; margin:0; text-align:center;">
-    <img src="screens/λήψΠαραγγελίαςPDA-σερβιτόρου.png" alt="Λήψη παραγγελίας — PDA" style="width:100%; height:auto;" />
-    <figcaption style="font-size:12px; margin-top:6px;">Λήψη παραγγελίας — PDA</figcaption>
+  <figure style="flex:0 0 calc(33% - 14px); margin:0;">
+    <img src="screens/λήψΠαραγγελίαςPDA-σερβιτόρου.png" alt="PDA — Λήψη Παραγγελίας" style="width:100%; height:auto; display:block; border:1px solid #e5e7eb; border-radius:6px;" />
   </figure>
-  <figure style="flex:0 0 32%; margin:0; text-align:center;">
-    <img src="screens/επιλογήΠαραγγελίαςΓιαΠροσθήκηΈξτραPDA-σερβιτόρου.png" alt="Επιλογή παραγγελίας για έξτρα — PDA" style="width:100%; height:auto;" />
-    <figcaption style="font-size:12px; margin-top:6px;">Επιλογή παραγγελίας για έξτρα — PDA</figcaption>
+  <figure style="flex:0 0 calc(33% - 14px); margin:0;">
+    <img src="screens/επιλογήΠαραγγελίαςΓιαΠροσθήκηΈξτραPDA-σερβιτόρου.png" alt="PDA — Επιλογή Παραγγελίας για Έξτρα" style="width:100%; height:auto; display:block; border:1px solid #e5e7eb; border-radius:6px;" />
   </figure>
-  <figure style="flex:0 0 32%; margin:0; text-align:center;">
-    <img src="screens/λήψηΠαραγγελίας-ΈξτραPDA-σερβιτόρου.png" alt="Έξτρα — PDA" style="width:100%; height:auto;" />
-    <figcaption style="font-size:12px; margin-top:6px;">Ροή έξτρα — PDA</figcaption>
+  <figure style="flex:0 0 calc(33% - 14px); margin:0;">
+    <img src="screens/λήψηΠαραγγελίας-ΈξτραPDA-σερβιτόρου.png" alt="PDA — Ροή Έξτρα" style="width:100%; height:auto; display:block; border:1px solid #e5e7eb; border-radius:6px;" />
   </figure>
-  <figure style="flex:0 0 32%; margin:0; text-align:center;">
-    <img src="screens/Παραγγελίες-PDA-σερβιτόρου.png" alt="Παραγγελίες — PDA" style="width:100%; height:auto;" />
-    <figcaption style="font-size:12px; margin-top:6px;">Λίστα παραγγελιών — PDA</figcaption>
+  <figure style="flex:0 0 calc(33% - 14px); margin:0;">
+    <img src="screens/Παραγγελίες-PDA-σερβιτόρου.png" alt="PDA — Παραγγελίες" style="width:100%; height:auto; display:block; border:1px solid #e5e7eb; border-radius:6px;" />
   </figure>
-  <figure style="flex:0 0 32%; margin:0; text-align:center;">
-    <img src="screens/λήψηΠαραγγελίας-liveOrderingPDA-σερβιτόρου.png" alt="Live ordering — PDA" style="width:100%; height:auto;" />
-    <figcaption style="font-size:12px; margin-top:6px;">Live ordering — PDA</figcaption>
+  <figure style="flex:0 0 calc(33% - 14px); margin:0;">
+    <img src="screens/λήψηΠαραγγελίας-liveOrderingPDA-σερβιτόρου.png" alt="PDA — Live Ordering" style="width:100%; height:auto; display:block; border:1px solid #e5e7eb; border-radius:6px;" />
   </figure>
 </div>
 
-Functions
-
-- Start order
-- Add extras
-- View orders
-- Select correct base order
-- Fast interaction optimized for touch
+Pilot outcome: reduced communication errors, extras correctly linked to base orders, high entry speed during peak, no device freezes. Total 940 items processed with smooth flow from intake to billing.
 
 ---
 
 ## 4 — Order Intake
 
-Features
-
-- Category filtering
-- Fast product grid
-- Item notes
-- Live order building
-- Order confirmation
+During the pilot, order flow stayed fast: quick category switch, real‑time build, confirmation without interruptions. Corrections used soft delete without blocking service; waiters switched tables quickly.
 
 ---
 
 ## 5 — Extras Flow
 
-Key design decision:  
-Extras are separate kitchen tickets but linked to the base order.
-
-Benefits
-
-- Kitchen clarity
-- No confusion during busy service
-- Accurate billing
+In the pilot, extras were issued as separate kitchen tickets linked to the base order. This kept the kitchen clear on what to prepare, reduced back‑and‑forth, and ensured accurate billing.
 
 ---
 
@@ -123,23 +98,20 @@ Capabilities
 - Soft delete
 - Status tracking
 
-Used during the pilot under heavy load.
+Used in the pilot under heavy load. Priorities, edits, and soft deletes worked without blocking dish progression.
 
-Screens (3 per row):
+Web screenshots (scaled proportionally):
 
-<div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between;">
-  <figure style="flex:0 0 32%; margin:0; text-align:center;">
-    <img src="screens/Κουζίνα-Παραγγελίες.png" alt="Κουζίνα — Παραγγελίες" style="width:100%; height:auto;" />
-    <figcaption style="font-size:12px; margin-top:6px;">Κουζίνα — Παραγγελίες</figcaption>
-  </figure>
-  <figure style="flex:0 0 32%; margin:0; text-align:center;">
-    <img src="screens/Λογαριασμός.png" alt="Λογαριασμός" style="width:100%; height:auto;" />
-    <figcaption style="font-size:12px; margin-top:6px;">Λογαριασμός</figcaption>
-  </figure>
-  <figure style="flex:0 0 32%; margin:0; text-align:center;">
-    <img src="screens/Αdmin-Προϊόντα.png" alt="Admin — Προϊόντα" style="width:100%; height:auto;" />
-    <figcaption style="font-size:12px; margin-top:6px;">Admin — Προϊόντα</figcaption>
-  </figure>
+<div style="display:block; margin:10px 0;">
+  <img src="screens/Αdmin-Προϊόντα.png" alt="Admin — Products" style="max-width:90%; height:auto; display:block; margin:0 auto 16px; border:1px solid #e5e7eb; border-radius:6px;" />
+</div>
+
+<div style="display:block; margin:10px 0;">
+  <img src="screens/Κουζίνα-Παραγγελίες.png" alt="Kitchen — Orders" style="max-width:90%; height:auto; display:block; margin:0 auto 16px; border:1px solid #e5e7eb; border-radius:6px;" />
+</div>
+
+<div style="display:block; margin:10px 0;">
+  <img src="screens/Λογαριασμός.png" alt="Bill (popup)" style="max-width:70%; height:auto; display:block; margin:0 auto; border:1px solid #e5e7eb; border-radius:6px;" />
 </div>
 
 ---

@@ -18,7 +18,7 @@ Multiple projects may be executed under this challenge. The order system is one 
 Start Date: 17-02-2026  
 Challenge Length: 100 days
 
-Current Day: Day 8 / 100  
+Current Day: Day 9 / 100  
 Status: ACTIVE
 
 Tracking Rules:
@@ -34,6 +34,7 @@ Day Log:
 - Day 3 — Database integration progress, menu moved to DB, admin implementation initiated
 - Day 4 — Sprint opened for live DB enforcement and real-time kitchen updates; Admin view design prepared; deployment pilot evaluation initiated
 - Day 8 — First real restaurant pilot completed successfully. System handled live service during a traditional carnival event. Minor workflow issues identified, no critical failures. Live reporting endpoint deployed.
+- Day 9 — Created and deployed [Product Presentation](https://dijon-stage-93635007.figma.site/)
 
 ---
 
